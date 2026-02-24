@@ -1,0 +1,11 @@
+# Analysis options for tools directory
+# These are standalone CLI scripts, not production Flutter code
+# So we disable rules that don't apply
+
+include: ../analysis_options.yaml
+
+linter:
+  rules:
+    avoid_print: false
+    constant_identifier_names: false
+    depend_on_referenced_packages: false

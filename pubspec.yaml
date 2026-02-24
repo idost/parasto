@@ -1,0 +1,163 @@
+name: myna
+description: Persian Audiobook Platform - Premium audiobook streaming app with narrator marketplace
+
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.10.7 <4.0.0'
+  flutter: '>=3.38.7'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # Supabase - Backend as a Service
+  supabase_flutter: ^2.8.0
+  
+  # State Management
+  flutter_riverpod: ^2.4.9
+  
+  # Navigation
+  
+  # Audio Player
+  just_audio: ^0.9.36
+  audio_service: ^0.18.12
+  audio_session: ^0.1.18
+
+  # Audio Recording - using flutter_sound instead of record package
+  flutter_sound: 9.30.0
+  
+  # Image Loading & Caching
+  cached_network_image: ^3.3.1
+  
+  # File Handling
+  file_picker: ^6.1.1
+  image_picker: ^1.0.7
+  image_cropper: ^11.0.0
+  path_provider: ^2.1.2
+  
+  # Payments (Stripe)
+  flutter_stripe: ^10.1.1
+
+  # In-App Purchases (subscriptions)
+  in_app_purchase: ^3.2.0
+  in_app_purchase_storekit: ^0.3.18
+  
+  # UI Components
+  shimmer: ^3.0.0
+  flutter_svg: ^2.0.10
+
+  # Charts
+  fl_chart: ^0.69.0
+
+  # Sharing (for CSV export)
+  share_plus: ^10.0.0
+  
+  # Utilities
+
+  # Downloads
+  dio: ^5.4.0
+
+  # Environment Variables
+  flutter_dotenv: ^5.1.0
+
+  # Logging
+  logger: ^2.0.2+1
+
+  # Local Storage
+  shared_preferences: ^2.2.2
+
+  # Permissions - Required for Android 13+ POST_NOTIFICATIONS runtime permission
+  permission_handler: ^11.3.1
+  
+  # Persian/RTL Support
+  flutter_localizations:
+    sdk: flutter
+
+  # Social Auth
+  google_sign_in: ^7.2.0
+  sign_in_with_apple: ^7.0.1
+  crypto: ^3.0.7
+
+  # EPUB Reader (local vendored packages)
+  cosmos_epub:
+    path: packages/cosmos_epub
+  epubx:
+    path: packages/epubx
+
+  # Wake Lock (keep screen on during Car Mode)
+  wakelock_plus: ^1.2.8
+
+  # EPUB Reader dependencies
+  screen_brightness: ^1.0.1
+  fluttertoast: ^8.2.5
+  get_storage: ^2.1.1
+  flutter_screenutil: ^5.9.0
+  html: ^0.15.4
+  http: ^1.2.0
+  url_launcher: ^6.2.1
+  flutter_html_reborn: ^3.0.0
+  fading_edge_scrollview: ^4.1.1
+
+  # Ebook cover colour extraction
+  palette_generator: ^0.3.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^3.0.1
+  flutter_launcher_icons: ^0.13.1
+
+# Override to fix app_links compatibility issue with Android build
+dependency_overrides:
+  app_links: ^6.1.0
+
+# App Icon Configuration
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icons/app_icon.png"
+  # Android adaptive icon settings
+  # NOTE: adaptive_icon_foreground uses a PADDED version of the icon.
+  # Android adaptive icons crop ~18% from each edge, so the foreground
+  # must have the logo centered in the inner 66% "safe zone".
+  # The foreground asset should be 1024x1024 with ~170px padding on all sides.
+  adaptive_icon_background: "#1a1a2e"
+  adaptive_icon_foreground: "assets/icons/app_icon_foreground_android.png"
+  # Remove alpha channel for iOS (required)
+  remove_alpha_ios: true
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - .env
+    - assets/icons/micro/
+
+  # Abar - Primary Farsi font for Parasto app (licensed)
+  # Place font files in: assets/fonts/Abar/
+  fonts:
+    - family: Abar
+      fonts:
+        - asset: assets/fonts/Abar/Abar-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Abar/Abar-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Abar/Abar-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Abar/Abar-Bold.ttf
+          weight: 700
+    # Vazirmatn - Fallback Farsi font
+    - family: Vazirmatn
+      fonts:
+        - asset: assets/fonts/Vazirmatn/Vazirmatn-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Vazirmatn/Vazirmatn-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Vazirmatn/Vazirmatn-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Vazirmatn/Vazirmatn-Bold.ttf
+          weight: 700

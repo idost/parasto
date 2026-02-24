@@ -1,0 +1,46 @@
+=== PARASTO RELEASE BUILD INFO ===
+Build Date: 2025-12-30 06:14 UTC+3:30
+Build Source: Working directory (uncommitted changes)
+
+=== FLUTTER VERSION ===
+Flutter 3.24.5 • channel stable • https://github.com/flutter/flutter.git
+Framework • revision dec2ee5c1f (1 year, 2 months ago) • 2024-11-13 11:13:06 -0800
+Engine • revision a18df97ca5
+Tools • Dart 3.5.4 • DevTools 2.37.3
+
+=== JAVA VERSION ===
+openjdk version "17.0.17" 2025-10-21
+OpenJDK Runtime Environment Temurin-17.0.17+10 (build 17.0.17+10)
+OpenJDK 64-Bit Server VM Temurin-17.0.17+10 (build 17.0.17+10, mixed mode, sharing)
+
+=== GRADLE VERSION ===
+
+------------------------------------------------------------
+Gradle 8.3
+------------------------------------------------------------
+
+Build time:   2023-08-17 07:06:47 UTC
+Revision:     8afbf24b469158b714b36e84c6f4d4976c86fcd5
+
+Kotlin:       1.9.0
+Groovy:       3.0.17
+Ant:          Apache Ant(TM) version 1.10.13 compiled on January 4 2023
+JVM:          17.0.17 (Eclipse Adoptium 17.0.17+10)
+
+=== GIT INFO ===
+HEAD commit: f486394713ab8361731dbb4035e43c1aa48d07f0
+Branch: main
+Modified files: 113
+Untracked files: 67
+Lines changed: +11291 / -3277
+
+=== APK INFO ===
+-rw-r--r--@ 1 bostan  staff    34M Dec 30 06:14 build/app/outputs/flutter-apk/app-release.apk
+
+=== IPA INFO ===
+Build Method: xcodebuild archive + export (flutter build ios had CodeSign issues)
+Signing Identity: Apple Development: Abdullah Khodadad (9AA5C45832)
+Provisioning Profile: iOS Team Provisioning Profile: com.myna.audiobook
+Team ID: M8KTVYAXGT
+Export Method: development (debugging)
+Size: 21MB

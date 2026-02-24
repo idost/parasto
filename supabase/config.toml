@@ -1,0 +1,28 @@
+# Supabase Configuration
+# See: https://supabase.com/docs/guides/cli/config
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "storage"]
+extra_search_path = ["public"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 15
+
+[studio]
+enabled = true
+port = 54323
+
+[functions.create-payment-intent]
+# Edge Functions configuration
+verify_jwt = true
+
+[functions.book-summary]
+verify_jwt = true
+
+[functions.verify-gift-recipient]
+verify_jwt = true
