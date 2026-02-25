@@ -28,7 +28,6 @@ import 'package:myna/providers/ebook_providers.dart';
 import 'package:myna/widgets/ebook_card.dart';
 import 'package:myna/screens/listener/ebooks_screen.dart';
 import 'package:myna/screens/ebook_detail_screen.dart';
-import 'package:myna/services/auth_service.dart';
 
 // ============================================
 // HOME SCREEN — Redesigned with Visual Rhythm
@@ -37,29 +36,28 @@ import 'package:myna/services/auth_service.dart';
 // SECTION ORDER (3-act structure):
 //
 // ACT 1: YOUR WORLD
-// 1. Greeting header (time-aware + user name)
-// 2. Featured banner carousel
-// 3. Continue listening
-// 4. Listening stats (moved up)
-// 5. "Because you listened to..." (NEW)
+// 1. Featured banner carousel (first thing users see)
+// 2. Continue listening
 //
 // ACT 2: WHAT'S HAPPENING
-// 6. New releases (LARGE cards)
-// 7. Popular (NUMBERED vertical list)
-// 8. Narrator spotlight (NEW)
-// 9. Parasto Originals (NEW, LARGE cards)
+// 3. New releases (LARGE cards)
+// 4. Popular (NUMBERED vertical list)
+// 5. Narrator spotlight
+// 6. Parasto Originals (LARGE cards)
 //
 // ACT 3: GO DEEPER
-// 10. Music
-// 11. Podcasts
-// 12. Ebooks
-// 13+ Favorite categories (algorithmic)
-// 14. Followed authors
-// 15. Promo shelves (COMPACT cards for deep browse)
-// 16. Recently played (moved down)
-// 17. Featured/Suggestions
-// 18. Articles
-// 19. Categories (keep at end)
+// 7. Music
+// 8. Podcasts
+// 9. Ebooks
+// 10+ Favorite categories (algorithmic)
+// 11. Followed authors
+// 12. Promo shelves (COMPACT cards)
+// 13. Recently played
+// 14. Featured/Suggestions
+// 15. Articles
+// 16. Listening stats
+// 17. "Because you listened to..."
+// 18. Categories (keep at end)
 // ============================================
 
 class HomeScreen extends ConsumerWidget {
@@ -94,9 +92,6 @@ class HomeScreen extends ConsumerWidget {
     final musicAsync = ref.watch(homeMusicProvider);
     final becauseYouListenedAsync = ref.watch(becauseYouListenedProvider);
     final narratorSpotlightAsync = ref.watch(narratorSpotlightProvider);
-
-    // User profile for greeting
-    final profileAsync = ref.watch(profileProvider);
 
     // Content type preferences — controls which sections are visible
     final contentPrefs = ref.watch(contentPreferenceProvider);
@@ -161,15 +156,7 @@ class HomeScreen extends ConsumerWidget {
                     // ACT 1: YOUR WORLD
                     // ════════════════════════════════════════════
 
-                    // 1. Greeting Header (NEW)
-                    profileAsync.maybeWhen(
-                      data: (profile) => _GreetingHeader(
-                        userName: profile?.displayName ?? profile?.fullName,
-                      ),
-                      orElse: () => const _GreetingHeader(userName: null),
-                    ),
-
-                    // 2. Featured Banner Carousel (keep as-is)
+                    // 1. Featured Banner Carousel (first thing users see)
                     bannersAsync.when(
                       loading: () => const ShimmerBox(width: double.infinity, height: 180),
                       error: (_, __) => const SizedBox.shrink(),
@@ -185,25 +172,6 @@ class HomeScreen extends ConsumerWidget {
                       data: (items) => items.isEmpty
                           ? const SizedBox.shrink()
                           : ContinueSection(items: items),
-                    ),
-
-                    // 4. Listening Stats (MOVED UP from near bottom)
-                    listeningStatsAsync.maybeWhen(
-                      data: (stats) => stats.totalListenTimeSeconds > 0
-                          ? _ListeningStatsSection(stats: stats)
-                          : const SizedBox.shrink(),
-                      orElse: () => const SizedBox.shrink(),
-                    ),
-
-                    // 5. "Because you listened to..." (NEW)
-                    becauseYouListenedAsync.maybeWhen(
-                      data: (data) => data == null
-                          ? const SizedBox.shrink()
-                          : _AudiobookSection(
-                              title: AppStrings.becauseYouListenedTo(data.sourceBookTitle),
-                              books: data.recommendations,
-                            ),
-                      orElse: () => const SizedBox.shrink(),
                     ),
 
                     // ════════════════════════════════════════════
@@ -237,7 +205,7 @@ class HomeScreen extends ConsumerWidget {
                             ),
                     ),
 
-                    // 7. Popular Books (NUMBERED VERTICAL LIST)
+                    // 7. Popular Books (NUMBERED VERTICAL LIST) — subtle darker background
                     popularAsync.when(
                       loading: () => const BookCardListSkeleton(),
                       error: (_, __) => home_sk.SectionError(
@@ -246,41 +214,69 @@ class HomeScreen extends ConsumerWidget {
                       ),
                       data: (books) => books.isEmpty
                           ? const SizedBox.shrink()
-                          : _PopularNumberedList(
-                              books: books,
-                              onSeeAll: () => Navigator.push(
-                                context,
-                                MaterialPageRoute<void>(
-                                  builder: (_) => AudiobookListScreen(
-                                    title: AppStrings.popularBooks,
-                                    listType: AudiobookListType.popular,
+                          : Container(
+                              margin: const EdgeInsets.symmetric(vertical: 4),
+                              decoration: BoxDecoration(
+                                color: AppColors.surface.withValues(alpha: 0.35),
+                                borderRadius: BorderRadius.circular(AppRadius.xl),
+                              ),
+                              child: _PopularNumberedList(
+                                books: books,
+                                onSeeAll: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute<void>(
+                                    builder: (_) => AudiobookListScreen(
+                                      title: AppStrings.popularBooks,
+                                      listType: AudiobookListType.popular,
+                                    ),
                                   ),
                                 ),
                               ),
                             ),
                     ),
 
-                    // 8. Narrator Spotlight (NEW)
+                    // 8. Narrator Spotlight — faint primary/gold tint
                     narratorSpotlightAsync.maybeWhen(
                       data: (data) => data == null
                           ? const SizedBox.shrink()
-                          : _NarratorSpotlightSection(data: data),
+                          : Container(
+                              margin: const EdgeInsets.symmetric(vertical: 4),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withValues(alpha: 0.04),
+                                borderRadius: BorderRadius.circular(AppRadius.xl),
+                              ),
+                              child: _NarratorSpotlightSection(data: data),
+                            ),
                       orElse: () => const SizedBox.shrink(),
                     ),
 
-                    // 9. Parasto Originals (NEW, LARGE cards)
+                    // 9. Parasto Originals (LARGE cards) — subtle gradient
                     originalsAsync.when(
                       loading: () => const SizedBox.shrink(),
                       error: (_, __) => const SizedBox.shrink(),
                       data: (books) => books.isEmpty
                           ? const SizedBox.shrink()
-                          : _AudiobookSection(
-                              title: AppStrings.parastoOriginals,
-                              books: books,
-                              icon: Icons.auto_awesome_rounded,
-                              cardWidth: AppDimensions.cardWidthLarge,
-                              cardCoverHeight: 270.0,
-                              carouselHeight: 390.0,
+                          : Container(
+                              margin: const EdgeInsets.symmetric(vertical: 4),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    AppColors.primary.withValues(alpha: 0.03),
+                                    AppColors.secondary.withValues(alpha: 0.04),
+                                  ],
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                ),
+                                borderRadius: BorderRadius.circular(AppRadius.xl),
+                              ),
+                              child: _AudiobookSection(
+                                title: AppStrings.parastoOriginals,
+                                books: books,
+                                icon: Icons.auto_awesome_rounded,
+                                cardWidth: AppDimensions.cardWidthLarge,
+                                cardCoverHeight: 270.0,
+                                carouselHeight: 390.0,
+                              ),
                             ),
                     ),
 
@@ -446,7 +442,26 @@ class HomeScreen extends ConsumerWidget {
                               ),
                       ),
 
-                    // 19. Categories (keep at end)
+                    // Listening Stats (near bottom)
+                    listeningStatsAsync.maybeWhen(
+                      data: (stats) => stats.totalListenTimeSeconds > 0
+                          ? _ListeningStatsSection(stats: stats)
+                          : const SizedBox.shrink(),
+                      orElse: () => const SizedBox.shrink(),
+                    ),
+
+                    // "Because you listened to..." (near bottom)
+                    becauseYouListenedAsync.maybeWhen(
+                      data: (data) => data == null
+                          ? const SizedBox.shrink()
+                          : _AudiobookSection(
+                              title: AppStrings.becauseYouListenedTo(data.sourceBookTitle),
+                              books: data.recommendations,
+                            ),
+                      orElse: () => const SizedBox.shrink(),
+                    ),
+
+                    // Categories (keep at end)
                     categoriesAsync.when(
                       loading: () => const CategoryChipsSkeleton(),
                       error: (_, __) => const SizedBox.shrink(),
@@ -473,66 +488,6 @@ class HomeScreen extends ConsumerWidget {
 }
 
 // SectionHeader is now imported from lib/widgets/shared/section_header.dart
-
-// ============================================
-// GREETING HEADER (Phase 2A)
-// ============================================
-
-class _GreetingHeader extends StatelessWidget {
-  final String? userName;
-
-  const _GreetingHeader({required this.userName});
-
-  @override
-  Widget build(BuildContext context) {
-    final hour = DateTime.now().hour;
-    String greeting;
-    String emoji;
-
-    if (hour >= 5 && hour < 12) {
-      greeting = AppStrings.isLtr ? 'Good morning' : 'صبح بخیر';
-      emoji = '☀️';
-    } else if (hour >= 12 && hour < 17) {
-      greeting = AppStrings.isLtr ? 'Good afternoon' : 'ظهر بخیر';
-      emoji = '🌤️';
-    } else if (hour >= 17 && hour < 21) {
-      greeting = AppStrings.isLtr ? 'Good evening' : 'عصر بخیر';
-      emoji = '🌅';
-    } else {
-      greeting = AppStrings.isLtr ? 'Good night' : 'شب بخیر';
-      emoji = '🌙';
-    }
-
-    final displayName = userName ?? '';
-    final fullGreeting = displayName.isNotEmpty
-        ? '$greeting، $displayName $emoji'
-        : '${AppStrings.isLtr ? 'Hello' : 'سلام'} $emoji';
-
-    return Padding(
-      padding: const EdgeInsetsDirectional.fromSTEB(20, 16, 20, 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            fullGreeting,
-            style: AppTypography.headlineLarge.copyWith(
-              fontSize: 22,
-              color: AppColors.primary,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            AppStrings.greetingSubtitle,
-            style: AppTypography.bodyMedium.copyWith(
-              fontSize: 14,
-              color: AppColors.textTertiary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 // ============================================
 // AUDIOBOOK SECTION (supports card size variations)

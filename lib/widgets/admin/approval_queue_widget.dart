@@ -365,11 +365,15 @@ class ApprovalQueueWidget extends ConsumerWidget {
                     const SizedBox(width: 8),
                     const Icon(Icons.access_time, size: 11, color: AppColors.textTertiary),
                     const SizedBox(width: 4),
-                    Text(
-                      timeAgo,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: AppColors.textTertiary,
+                    Flexible(
+                      child: Text(
+                        timeAgo,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.textTertiary,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],

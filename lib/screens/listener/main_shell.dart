@@ -131,7 +131,7 @@ class _MainShellState extends ConsumerState<MainShell> {
                   children: [
                     _buildNavItem(0, Icons.home_outlined, Icons.home_rounded, 'خانه'),
                     _buildNavItem(1, Icons.library_books_outlined, Icons.library_books_rounded, 'کتابخانه'),
-                    _buildNavItem(2, Icons.explore_outlined, Icons.explore_rounded, 'کاوش'),
+                    _buildNavItem(2, Icons.search_outlined, Icons.search_rounded, 'کاوش'),
                     _buildNavItem(3, Icons.person_outline_rounded, Icons.person_rounded, 'پروفایل'),
                   ],
                 ),

@@ -319,6 +319,7 @@ class _AdminQualityScreenState extends ConsumerState<AdminQualityScreen>
       ),
       child: TabBar(
         controller: _tabController,
+        isScrollable: true,
         labelColor: AppColors.primary,
         unselectedLabelColor: AppColors.textSecondary,
         indicatorColor: AppColors.primary,

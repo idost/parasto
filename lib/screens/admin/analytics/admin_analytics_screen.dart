@@ -129,6 +129,7 @@ class _AdminAnalyticsScreenState extends ConsumerState<AdminAnalyticsScreen>
               color: AppColors.surface,
               child: TabBar(
                 controller: _tabController,
+                isScrollable: true,
                 labelColor: AppColors.primary,
                 unselectedLabelColor: AppColors.textSecondary,
                 indicatorColor: AppColors.primary,

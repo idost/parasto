@@ -421,32 +421,35 @@ class _AdminAudiobooksScreenState extends ConsumerState<AdminAudiobooksScreen>
                 if (!isEmbedded && activeRoute != '/admin/content/books' && activeRoute != '/admin/content/music' && activeRoute != '/admin/content/podcasts')
                   Padding(
                     padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
-                    child: Row(
-                      children: [
-                        _buildContentTypeChip(
-                          label: 'همه',
-                          isSelected: _contentTypeFilter == null,
-                          onTap: () => setState(() => _contentTypeFilter = null),
-                        ),
-                        const SizedBox(width: 8),
-                        _buildContentTypeChip(
-                          label: '📚 کتاب‌ها',
-                          isSelected: _contentTypeFilter == 'books',
-                          onTap: () => setState(() => _contentTypeFilter = 'books'),
-                        ),
-                        const SizedBox(width: 8),
-                        _buildContentTypeChip(
-                          label: '🎵 موسیقی',
-                          isSelected: _contentTypeFilter == 'music',
-                          onTap: () => setState(() => _contentTypeFilter = 'music'),
-                        ),
-                        const SizedBox(width: 8),
-                        _buildContentTypeChip(
-                          label: '🎙️ پادکست',
-                          isSelected: _contentTypeFilter == 'podcasts',
-                          onTap: () => setState(() => _contentTypeFilter = 'podcasts'),
-                        ),
-                      ],
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          _buildContentTypeChip(
+                            label: 'همه',
+                            isSelected: _contentTypeFilter == null,
+                            onTap: () => setState(() => _contentTypeFilter = null),
+                          ),
+                          const SizedBox(width: 8),
+                          _buildContentTypeChip(
+                            label: '📚 کتاب‌ها',
+                            isSelected: _contentTypeFilter == 'books',
+                            onTap: () => setState(() => _contentTypeFilter = 'books'),
+                          ),
+                          const SizedBox(width: 8),
+                          _buildContentTypeChip(
+                            label: '🎵 موسیقی',
+                            isSelected: _contentTypeFilter == 'music',
+                            onTap: () => setState(() => _contentTypeFilter = 'music'),
+                          ),
+                          const SizedBox(width: 8),
+                          _buildContentTypeChip(
+                            label: '🎙️ پادکست',
+                            isSelected: _contentTypeFilter == 'podcasts',
+                            onTap: () => setState(() => _contentTypeFilter = 'podcasts'),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
 

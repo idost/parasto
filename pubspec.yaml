@@ -3,7 +3,7 @@ description: Persian Audiobook Platform - Premium audiobook streaming app with n
 
 publish_to: 'none'
 
-version: 2.3.0+3
+version: 2.3.0+4
 
 environment:
   sdk: '>=3.10.7 <4.0.0'

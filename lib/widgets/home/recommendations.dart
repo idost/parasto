@@ -47,7 +47,7 @@ class NewFromFollowedSection extends StatelessWidget {
           ),
         ),
         SizedBox(
-          height: 180,
+          height: 240,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -137,7 +137,7 @@ class FavoriteCategorySection extends StatelessWidget {
           ),
         ),
         SizedBox(
-          height: 180,
+          height: 240,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -157,6 +157,7 @@ class FavoriteCategorySection extends StatelessWidget {
 }
 
 /// Card for individual recommendation (used by multiple sections).
+/// Aspect-ratio-aware: 2:3 portrait for books/ebooks, 1:1 square for music/podcast/article.
 class RecommendationCard extends StatelessWidget {
   final Map<String, dynamic> book;
 
@@ -169,6 +170,11 @@ class RecommendationCard extends StatelessWidget {
     final author = book['author_fa'] as String? ?? '';
     final coverUrl = book['cover_url'] as String?;
     final id = book['id'] as int?;
+    final contentType = (book['content_type'] as String?) ?? 'audiobook';
+    final isSquare = ['music', 'podcast', 'article'].contains(contentType);
+
+    const double cardWidth = 110;
+    final double coverHeight = isSquare ? cardWidth : cardWidth * 1.5; // 1:1 or 2:3
 
     return GestureDetector(
       onTap: () {
@@ -182,13 +188,13 @@ class RecommendationCard extends StatelessWidget {
         }
       },
       child: SizedBox(
-        width: 110,
+        width: cardWidth,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              width: 110,
-              height: 110,
+              width: cardWidth,
+              height: coverHeight,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(AppRadius.md),
                 boxShadow: [

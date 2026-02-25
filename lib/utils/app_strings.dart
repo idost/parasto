@@ -2440,7 +2440,7 @@ class AppStrings {
   static String get greetingSubtitle {
     switch (_currentLanguage) {
       case AppLanguage.fa:
-        return 'چه چیزی گوش بدیم؟';
+        return 'امروز چه گوش کنیم؟';
       case AppLanguage.en:
         return 'What shall we listen to?';
       case AppLanguage.tg:
@@ -2476,7 +2476,7 @@ class AppStrings {
   static String becauseYouListenedTo(String bookTitle) {
     switch (_currentLanguage) {
       case AppLanguage.fa:
-        return 'چون «$bookTitle» رو گوش دادید...';
+        return 'چون «$bookTitle» را گوش دادید...';
       case AppLanguage.en:
         return 'Because you listened to "$bookTitle"...';
       case AppLanguage.tg:

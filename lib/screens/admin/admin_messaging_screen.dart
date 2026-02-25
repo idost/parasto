@@ -68,6 +68,7 @@ class _AdminMessagingScreenState extends ConsumerState<AdminMessagingScreen>
               color: AppColors.surface,
               child: TabBar(
                 controller: _tabController,
+                isScrollable: true,
                 labelColor: AppColors.primary,
                 unselectedLabelColor: AppColors.textSecondary,
                 indicatorColor: AppColors.primary,

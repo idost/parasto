@@ -73,6 +73,7 @@ class _AdminEditAudiobookScreenState extends ConsumerState<AdminEditAudiobookScr
   bool _isMusic = false; // Content type: false = audiobook, true = music
   bool _isPodcast = false; // Content type: true = podcast
   bool _isEbook = false; // Content type: true = ebook
+  bool _isArticle = false; // Content type: true = article
   bool _isLoading = true;
   bool _isSaving = false;
   bool _isSyncingCreators = false; // For manual creator sync button
@@ -90,9 +91,19 @@ class _AdminEditAudiobookScreenState extends ConsumerState<AdminEditAudiobookScr
     if (_isMusic) return 'music';
     if (_isPodcast) return 'podcast';
     if (_isEbook) return 'ebook';
+    if (_isArticle) return 'article';
     return 'audiobook';
   }
-  bool get _isAudioType => !_isEbook;
+  bool get _isAudioType => !_isEbook && !_isArticle;
+
+  /// Dynamic screen title based on content type
+  String get _editTitle {
+    if (_isArticle) return 'ویرایش مقاله';
+    if (_isEbook) return 'ویرایش ای‌بوک';
+    if (_isMusic) return 'ویرایش موسیقی';
+    if (_isPodcast) return 'ویرایش پادکست';
+    return 'ویرایش کتاب صوتی';
+  }
 
   // Cover image
   Uint8List? _newCoverBytes;
@@ -106,7 +117,7 @@ class _AdminEditAudiobookScreenState extends ConsumerState<AdminEditAudiobookScr
     _loadCategories();
     if (_isMusic) {
       _loadMusicMetadata();
-    } else if (!_isEbook) {
+    } else if (!_isEbook && !_isArticle) {
       _loadBookMetadata();
     }
   }
@@ -163,6 +174,7 @@ class _AdminEditAudiobookScreenState extends ConsumerState<AdminEditAudiobookScr
     _isMusic = audiobook['content_type'] == 'music';
     _isPodcast = audiobook['content_type'] == 'podcast';
     _isEbook = audiobook['content_type'] == 'ebook';
+    _isArticle = audiobook['content_type'] == 'article';
     _priceController.text = ((audiobook['price_toman'] as int?) ?? 0).toString();
     _existingCoverUrl = audiobook['cover_url'] as String?;
     _subtitleFaController.text = (audiobook['subtitle_fa'] as String?) ?? '';
@@ -620,7 +632,7 @@ class _AdminEditAudiobookScreenState extends ConsumerState<AdminEditAudiobookScr
         backgroundColor: AppColors.background,
         appBar: AppBar(
           backgroundColor: AppColors.background,
-          title: const Text('ویرایش کتاب'),
+          title: Text(_editTitle),
           centerTitle: true,
         ),
         body: _isLoading
@@ -706,13 +718,13 @@ class _AdminEditAudiobookScreenState extends ConsumerState<AdminEditAudiobookScr
                             Row(
                               children: [
                                 Icon(
-                                  _isMusic ? Icons.person : (_isPodcast ? Icons.podcasts : Icons.edit),
+                                  _isMusic ? Icons.person : (_isPodcast ? Icons.podcasts : (_isArticle ? Icons.article : Icons.edit)),
                                   color: AppColors.primary,
                                   size: 20,
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
-                                  _isMusic ? 'اطلاعات هنرمند' : (_isPodcast ? 'اطلاعات میزبان' : 'اطلاعات نویسنده و مترجم'),
+                                  _isMusic ? 'اطلاعات هنرمند' : (_isPodcast ? 'اطلاعات میزبان' : (_isArticle ? 'اطلاعات نویسنده' : 'اطلاعات نویسنده و مترجم')),
                                   style: const TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.bold,
@@ -879,6 +891,41 @@ class _AdminEditAudiobookScreenState extends ConsumerState<AdminEditAudiobookScr
                                 decoration: const InputDecoration(
                                   labelText: 'منبع (اختیاری)',
                                   hintText: 'مثال: رادیو فردا',
+                                  prefixIcon: Icon(Icons.source),
+                                ),
+                              ),
+                            ] else if (_isArticle) ...[
+                              // ARTICLE METADATA FIELDS
+                              // Articles only need author and optional co-authors
+
+                              // Author
+                              TextFormField(
+                                controller: _authorFaController,
+                                decoration: const InputDecoration(
+                                  labelText: 'نویسنده مقاله',
+                                  hintText: 'نام نویسنده',
+                                  prefixIcon: Icon(Icons.edit),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+
+                              // Co-authors (optional)
+                              TextFormField(
+                                controller: _coAuthorsController,
+                                decoration: const InputDecoration(
+                                  labelText: 'نویسندگان همکار (اختیاری)',
+                                  hintText: 'نام‌ها را با کاما جدا کنید',
+                                  prefixIcon: Icon(Icons.people_outline),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+
+                              // Archive source (optional)
+                              TextFormField(
+                                controller: _bookArchiveController,
+                                decoration: const InputDecoration(
+                                  labelText: 'منبع (اختیاری)',
+                                  hintText: 'وب‌سایت یا نشریه',
                                   prefixIcon: Icon(Icons.source),
                                 ),
                               ),
