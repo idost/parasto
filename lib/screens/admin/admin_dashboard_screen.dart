@@ -19,22 +19,23 @@ final adminStatsProvider = FutureProvider<Map<String, dynamic>>((ref) async {
     final supabase = Supabase.instance.client;
 
     // Fetch all stats in parallel for better performance
+    // Uses content_type column for type-based counts
     final results = await Future.wait([
       // Pending audiobooks count
       supabase
           .from('audiobooks')
           .select('id')
           .eq('status', 'submitted'),
-      // Total books count (is_music = false)
+      // Total audiobooks count (content_type = 'audiobook')
       supabase
           .from('audiobooks')
           .select('id')
-          .eq('is_music', false),
-      // Total music count (is_music = true)
+          .eq('content_type', 'audiobook'),
+      // Total music count (content_type = 'music')
       supabase
           .from('audiobooks')
           .select('id')
-          .eq('is_music', true),
+          .eq('content_type', 'music'),
       // Total listeners count
       supabase
           .from('profiles')
@@ -50,6 +51,11 @@ final adminStatsProvider = FutureProvider<Map<String, dynamic>>((ref) async {
       supabase
           .from('purchases')
           .select('amount'),
+      // Total podcasts count (content_type = 'podcast')
+      supabase
+          .from('audiobooks')
+          .select('id')
+          .eq('content_type', 'podcast'),
     ]);
 
     final pendingContent = (results[0] as List).length;
@@ -58,19 +64,7 @@ final adminStatsProvider = FutureProvider<Map<String, dynamic>>((ref) async {
     final listeners = (results[3] as List).length;
     final narrators = (results[4] as List).length;
     final purchases = results[5] as List;
-
-    // Fetch podcasts count separately (column may not exist)
-    int totalPodcasts = 0;
-    try {
-      final podcastsResult = await supabase
-          .from('audiobooks')
-          .select('id')
-          .eq('is_podcast', true);
-      totalPodcasts = (podcastsResult as List).length;
-    } catch (e) {
-      // is_podcast column may not exist yet
-      AppLogger.d('is_podcast column not found for stats');
-    }
+    final totalPodcasts = (results[6] as List).length;
 
     // Calculate total purchases and revenue from ALL purchases
     final totalPurchases = purchases.length;
@@ -79,15 +73,12 @@ final adminStatsProvider = FutureProvider<Map<String, dynamic>>((ref) async {
       (sum, p) => sum + ((p['amount'] as int?) ?? 0),
     );
 
-    // Adjust book count to exclude podcasts (if column exists)
-    final adjustedBooks = totalBooks - totalPodcasts;
-
     return {
       'pending_content': pendingContent,
-      'total_books': adjustedBooks > 0 ? adjustedBooks : totalBooks,
+      'total_books': totalBooks,
       'total_music': totalMusic,
       'total_podcasts': totalPodcasts,
-      'total_content': totalBooks + totalMusic,
+      'total_content': totalBooks + totalMusic + totalPodcasts,
       'total_users': listeners + narrators,
       'total_narrators': narrators,
       'total_purchases': totalPurchases,

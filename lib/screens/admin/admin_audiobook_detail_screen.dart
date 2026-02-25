@@ -354,7 +354,7 @@ class _AdminAudiobookDetailScreenState extends ConsumerState<AdminAudiobookDetai
   @override
   Widget build(BuildContext context) {
     // Get narrator/artist from correct metadata table (not profiles which is the uploader account)
-    final isMusic = _audiobook['is_music'] == true;
+    final isMusic = _audiobook['content_type'] == 'music';
     final isParastoBrand = (_audiobook['is_parasto_brand'] as bool?) ?? false;
     String narratorDisplay;
     if (isParastoBrand) {
@@ -428,7 +428,7 @@ class _AdminAudiobookDetailScreenState extends ConsumerState<AdminAudiobookDetai
                               // Show author/artist based on content type
                               _buildCreatorInfoRow(),
                               // Show translator only for books (not music)
-                              if (_audiobook['is_music'] != true && _audiobook['translator_fa'] != null && (_audiobook['translator_fa'] as String).isNotEmpty)
+                              if (_audiobook['content_type'] != 'music' && _audiobook['translator_fa'] != null && (_audiobook['translator_fa'] as String).isNotEmpty)
                                 _infoRow(Icons.translate, 'مترجم', _audiobook['translator_fa'] as String),
                               _infoRow(Icons.mic, isMusic ? 'هنرمند' : 'گوینده', narratorDisplay),
                               _infoRow(Icons.category, 'دسته', (category?['name_fa'] as String?) ?? 'نامشخص'),
@@ -589,7 +589,7 @@ class _AdminAudiobookDetailScreenState extends ConsumerState<AdminAudiobookDetai
 
   /// Build row showing author (for books) or artist (for music)
   Widget _buildCreatorInfoRow() {
-    final isMusic = _audiobook['is_music'] == true;
+    final isMusic = _audiobook['content_type'] == 'music';
     final authorFa = _audiobook['author_fa'] as String?;
 
     if (authorFa == null || authorFa.isEmpty) {

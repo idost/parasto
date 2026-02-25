@@ -298,7 +298,10 @@ class _AdminUploadAudiobookScreenState extends ConsumerState<AdminUploadAudioboo
           'cover_url': coverUrl,
           'price_toman': price,
           'is_free': _isFree,
-          'is_music': _isMusic, // Content type flag
+          // content_type is the new source of truth for type detection
+          'content_type': _isMusic ? 'music' : (_isPodcast ? 'podcast' : (_isArticle ? 'article' : 'audiobook')),
+          // Keep boolean flags for backward compatibility
+          'is_music': _isMusic,
           'is_parasto_brand': _isParastoBrand, // Display as "پرستو" brand
           'status': 'draft', // Admin creates as draft, can approve later
           'language': 'fa',
@@ -310,7 +313,7 @@ class _AdminUploadAudiobookScreenState extends ConsumerState<AdminUploadAudioboo
           'is_featured': false,
         };
 
-        // Insert with is_podcast and is_article columns
+        // Insert with is_podcast and is_article columns (backward compat)
         try {
           response = await Supabase.instance.client
               .from('audiobooks')

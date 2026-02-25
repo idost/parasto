@@ -140,8 +140,8 @@ class _AdminEditAudiobookScreenState extends ConsumerState<AdminEditAudiobookScr
     _isFree = (audiobook['is_free'] as bool?) ?? true;
     _isFeatured = (audiobook['is_featured'] as bool?) ?? false;
     _isParastoBrand = (audiobook['is_parasto_brand'] as bool?) ?? false;
-    _isMusic = (audiobook['is_music'] as bool?) ?? false;
-    _isPodcast = (audiobook['is_podcast'] as bool?) ?? false;
+    _isMusic = audiobook['content_type'] == 'music';
+    _isPodcast = audiobook['content_type'] == 'podcast';
     _priceController.text = ((audiobook['price_toman'] as int?) ?? 0).toString();
     _existingCoverUrl = audiobook['cover_url'] as String?;
   }
@@ -223,7 +223,7 @@ class _AdminEditAudiobookScreenState extends ConsumerState<AdminEditAudiobookScr
     }
   }
 
-  /// Load book_metadata for audiobooks (is_music = false)
+  /// Load book_metadata for audiobooks (content_type != 'music')
   Future<void> _loadBookMetadata() async {
     if (_isMusic) return;
 
@@ -376,7 +376,12 @@ class _AdminEditAudiobookScreenState extends ConsumerState<AdminEditAudiobookScr
           'is_free': _isFree,
           'is_featured': _isFeatured,
           'is_parasto_brand': _isParastoBrand, // Display as "پرستو" brand
-          'is_podcast': _isPodcast, // Podcast content type flag
+          // content_type is the new source of truth for type detection
+          'content_type': _isMusic ? 'music' : (_isPodcast ? 'podcast' : 'audiobook'),
+          // Keep boolean flags for backward compatibility
+          'is_music': _isMusic,
+          'is_podcast': _isPodcast,
+          'is_article': false,
           'updated_at': DateTime.now().toIso8601String(),
         };
 
@@ -552,7 +557,7 @@ class _AdminEditAudiobookScreenState extends ConsumerState<AdminEditAudiobookScr
   @override
   Widget build(BuildContext context) {
     // Get narrator/artist from correct metadata table (not profiles which is the uploader account)
-    final isMusic = widget.audiobook['is_music'] == true;
+    final isMusic = widget.audiobook['content_type'] == 'music';
     final isParastoBrand = (widget.audiobook['is_parasto_brand'] as bool?) ?? false;
     String narratorName;
     if (isParastoBrand) {

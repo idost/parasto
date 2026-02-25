@@ -198,7 +198,12 @@ class _NarratorUploadScreenState extends ConsumerState<NarratorUploadScreen> {
               'cover_url': coverUrl,
               'price_toman': price,
               'is_free': _isFree,
-              'is_music': _isMusic, // Content type flag
+              // content_type is the new source of truth for type detection
+              'content_type': 'audiobook', // Narrators can only upload audiobooks
+              // Keep boolean flags for backward compatibility
+              'is_music': _isMusic,
+              'is_podcast': false,
+              'is_article': false,
               'status': 'draft',
               'language': 'fa',
               'chapter_count': 0,

@@ -31,7 +31,7 @@ final pendingContentProvider = FutureProvider<List<PendingContentItem>>((ref) as
     // Dashboard widget shows preview, but we need accurate count
     final audiobooks = await supabase
         .from('audiobooks')
-        .select('id, title_fa, narrator_id, is_music, created_at')
+        .select('id, title_fa, narrator_id, content_type, created_at')
         .eq('status', 'submitted')
         .order('created_at', ascending: true);
 
@@ -60,13 +60,13 @@ final pendingContentProvider = FutureProvider<List<PendingContentItem>>((ref) as
     return audiobooks.map((book) {
       final narratorId = book['narrator_id']?.toString();
       final creatorName = narratorId != null ? (profileMap[narratorId] ?? 'بدون نام') : 'بدون نام';
-      final isMusic = book['is_music'] as bool? ?? false;
+      final contentType = book['content_type'] as String? ?? 'audiobook';
 
       return PendingContentItem(
         id: book['id'].toString(),
         title: book['title_fa'] as String,
         creatorName: creatorName,
-        contentType: isMusic ? 'music' : 'book',
+        contentType: contentType == 'music' ? 'music' : 'book',
         submittedAt: DateTime.parse(book['created_at'] as String),
       );
     }).toList();

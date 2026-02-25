@@ -718,7 +718,7 @@ class _BulkActionButton extends StatelessWidget {
 class _AudiobooksList extends ConsumerWidget {
   final String status;
   final String searchQuery;
-  final String? contentTypeFilter; // null=all, 'books', 'music', 'podcasts'
+  final String? contentTypeFilter; // null=all, 'books', 'music', 'podcasts', 'articles'
   final ContentFilters filters;
   final VoidCallback onRefresh;
   final bool isSelectionMode;
@@ -748,17 +748,17 @@ class _AudiobooksList extends ConsumerWidget {
       data: (audiobooks) {
         var filtered = audiobooks;
 
-        // Apply content type filter
+        // Apply content type filter (uses content_type column)
         if (contentTypeFilter != null) {
           switch (contentTypeFilter) {
             case 'books':
-              filtered = filtered.where((book) => book['is_music'] != true && book['is_podcast'] != true && book['is_article'] != true).toList();
+              filtered = filtered.where((book) => book['content_type'] == 'audiobook').toList();
             case 'music':
-              filtered = filtered.where((book) => book['is_music'] == true).toList();
+              filtered = filtered.where((book) => book['content_type'] == 'music').toList();
             case 'podcasts':
-              filtered = filtered.where((book) => book['is_podcast'] == true).toList();
+              filtered = filtered.where((book) => book['content_type'] == 'podcast').toList();
             case 'articles':
-              filtered = filtered.where((book) => book['is_article'] == true).toList();
+              filtered = filtered.where((book) => book['content_type'] == 'article').toList();
           }
         }
 
@@ -781,7 +781,7 @@ class _AudiobooksList extends ConsumerWidget {
           filtered = filtered.where((book) {
             final titleFa = (book['title_fa'] ?? '').toString().toLowerCase();
             final titleEn = (book['title_en'] ?? '').toString().toLowerCase();
-            final isMusic = book['is_music'] == true;
+            final isMusic = book['content_type'] == 'music';
             final String narratorName;
             if (isMusic) {
               final musicMeta = book['music_metadata'] as Map<String, dynamic>?;
@@ -917,8 +917,8 @@ class _AudiobookCard extends StatelessWidget {
     final status = audiobook['status'] as String? ?? 'draft';
     final isFeatured = audiobook['is_featured'] == true;
     final isPending = status == 'submitted' || status == 'under_review';
-    final isMusic = audiobook['is_music'] == true;
-    final isPodcast = audiobook['is_podcast'] == true;
+    final isMusic = audiobook['content_type'] == 'music';
+    final isPodcast = audiobook['content_type'] == 'podcast';
 
     // Get narrator/artist/host from metadata
     String creatorDisplay;
