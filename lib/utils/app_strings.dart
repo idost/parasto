@@ -2431,4 +2431,80 @@ class AppStrings {
         return 'Яке аз хусусиятҳои фарқкунандаи Парасту, фароҳам овардани имконияти боркунии китобҳои садоӣ аз ҷониби корбарон аст. Ҳар касе ки мехоҳад метавонад китобро бо садои худ ривоят кунад ва дар барнома бор кунад.';
     }
   }
+
+  // ============================================
+  // HOME SCREEN REDESIGN — New Strings
+  // ============================================
+
+  /// Greeting subtitle — "What shall we listen to?"
+  static String get greetingSubtitle {
+    switch (_currentLanguage) {
+      case AppLanguage.fa:
+        return 'چه چیزی گوش بدیم؟';
+      case AppLanguage.en:
+        return 'What shall we listen to?';
+      case AppLanguage.tg:
+        return 'Чӣ гӯш кунем?';
+    }
+  }
+
+  /// Parasto Originals section title
+  static String get parastoOriginals {
+    switch (_currentLanguage) {
+      case AppLanguage.fa:
+        return 'رهاورد پرستو';
+      case AppLanguage.en:
+        return 'Parasto Originals';
+      case AppLanguage.tg:
+        return 'Раҳоварди Парасту';
+    }
+  }
+
+  /// Narrator spotlight section title
+  static String get narratorSpotlight {
+    switch (_currentLanguage) {
+      case AppLanguage.fa:
+        return 'گوینده هفته';
+      case AppLanguage.en:
+        return 'Narrator Spotlight';
+      case AppLanguage.tg:
+        return 'Гӯяндаи ҳафта';
+    }
+  }
+
+  /// "Because you listened to..." dynamic title
+  static String becauseYouListenedTo(String bookTitle) {
+    switch (_currentLanguage) {
+      case AppLanguage.fa:
+        return 'چون «$bookTitle» رو گوش دادید...';
+      case AppLanguage.en:
+        return 'Because you listened to "$bookTitle"...';
+      case AppLanguage.tg:
+        return 'Барои он ки "$bookTitle"-ро гӯш кардед...';
+    }
+  }
+
+  /// Play count label (e.g. "۱٬۲۳۴ بار پخش")
+  static String playCount(String count) {
+    switch (_currentLanguage) {
+      case AppLanguage.fa:
+        return '$count بار پخش';
+      case AppLanguage.en:
+        return '$count plays';
+      case AppLanguage.tg:
+        return '$count маротиба пахш';
+    }
+  }
+
+  /// Narrator book count (e.g. "۱۲ کتاب خوانده")
+  static String narratorBookCount(String count) {
+    switch (_currentLanguage) {
+      case AppLanguage.fa:
+        return '$count کتاب خوانده';
+      case AppLanguage.en:
+        return '$count books narrated';
+      case AppLanguage.tg:
+        return '$count китоб хонда';
+    }
+  }
 }

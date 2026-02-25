@@ -908,6 +908,252 @@ final musicContinueListeningProvider = FutureProvider<List<Map<String, dynamic>>
 });
 
 // ============================================
+// HOME SCREEN REDESIGN — NEW PROVIDERS
+// ============================================
+
+/// Provider for Parasto Originals (is_parasto_brand = true)
+/// Shows audiobooks produced by Parasto's own team
+final homeOriginalsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
+  try {
+    final response = await Supabase.instance.client
+        .from('audiobooks')
+        .select('''
+          id, title_fa, title_en, cover_url, content_type, is_free,
+          total_duration_seconds, author_fa, play_count, is_featured, status,
+          is_parasto_brand,
+          categories(name_fa),
+          book_metadata(narrator_name)
+        ''')
+        .eq('status', 'approved')
+        .eq('is_parasto_brand', true)
+        .order('created_at', ascending: false)
+        .limit(10);
+    return List<Map<String, dynamic>>.from(response);
+  } catch (e) {
+    AppLogger.e('Error fetching Parasto originals', error: e);
+    return [];
+  }
+});
+
+/// Provider for music on home screen (content_type = 'music')
+/// Shows music items for the home screen music section
+final homeMusicProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
+  try {
+    final response = await Supabase.instance.client
+        .from('audiobooks')
+        .select('''
+          id, title_fa, title_en, cover_url, content_type, is_free,
+          total_duration_seconds, author_fa, play_count, status,
+          categories(name_fa),
+          music_metadata(artist_name, featured_artists)
+        ''')
+        .eq('status', 'approved')
+        .eq('content_type', 'music')
+        .order('play_count', ascending: false)
+        .order('created_at', ascending: false)
+        .limit(10);
+    return List<Map<String, dynamic>>.from(response);
+  } catch (e) {
+    AppLogger.e('Error fetching home music', error: e);
+    return [];
+  }
+});
+
+/// Data class for "Because you listened to..." recommendation
+class BecauseYouListenedData {
+  final String sourceBookTitle;
+  final List<Map<String, dynamic>> recommendations;
+
+  const BecauseYouListenedData({
+    required this.sourceBookTitle,
+    required this.recommendations,
+  });
+}
+
+/// Provider for "Because you listened to..." section
+/// Gets the most recently played audiobook, then finds same-category items
+final becauseYouListenedProvider =
+    FutureProvider.autoDispose<BecauseYouListenedData?>((ref) async {
+  final user = Supabase.instance.client.auth.currentUser;
+  if (user == null) return null;
+
+  try {
+    // Step 1: Get user's most recently played audiobook with progress
+    final progressResponse = await Supabase.instance.client
+        .from('listening_progress')
+        .select('audiobook_id, completion_percentage, last_played_at')
+        .eq('user_id', user.id as Object)
+        .gt('completion_percentage', 10) // Must have meaningfully listened
+        .order('last_played_at', ascending: false)
+        .limit(5);
+
+    if ((progressResponse as List).isEmpty) return null;
+
+    // Step 2: Get the audiobook details for the source book
+    final audiobookIds = progressResponse
+        .map((p) => p['audiobook_id'] as int)
+        .toList();
+
+    final audiobooksResponse = await Supabase.instance.client
+        .from('audiobooks')
+        .select('id, title_fa, category_id, content_type')
+        .inFilter('id', audiobookIds)
+        .eq('status', 'approved')
+        .inFilter('content_type', ['audiobook', 'podcast']);
+
+    if ((audiobooksResponse as List).isEmpty) return null;
+
+    // Find the most recent book with a category
+    Map<String, dynamic>? sourceBook;
+    for (final p in progressResponse) {
+      final id = p['audiobook_id'] as int;
+      final book = (audiobooksResponse as List).cast<Map<String, dynamic>>()
+          .where((b) => b['id'] == id && b['category_id'] != null)
+          .firstOrNull;
+      if (book != null) {
+        sourceBook = book;
+        break;
+      }
+    }
+
+    if (sourceBook == null) return null;
+
+    final categoryId = sourceBook['category_id'] as int;
+    final sourceTitle = (sourceBook['title_fa'] as String?) ?? '';
+    final sourceId = sourceBook['id'] as int;
+
+    // Step 3: Get same-category books, exclude the source
+    final recsResponse = await Supabase.instance.client
+        .from('audiobooks')
+        .select('''
+          id, title_fa, title_en, cover_url, content_type, is_free,
+          total_duration_seconds, author_fa, play_count, status,
+          categories(name_fa),
+          book_metadata(narrator_name)
+        ''')
+        .eq('status', 'approved')
+        .eq('category_id', categoryId)
+        .neq('id', sourceId)
+        .inFilter('content_type', ['audiobook', 'podcast'])
+        .order('play_count', ascending: false)
+        .limit(10);
+
+    final recs = List<Map<String, dynamic>>.from(recsResponse);
+    if (recs.isEmpty) return null;
+
+    return BecauseYouListenedData(
+      sourceBookTitle: sourceTitle,
+      recommendations: recs,
+    );
+  } catch (e) {
+    AppLogger.e('Error fetching because-you-listened recommendations', error: e);
+    return null;
+  }
+});
+
+/// Data class for Narrator Spotlight section
+class NarratorSpotlightData {
+  final String narratorName;
+  final String? avatarUrl;
+  final int bookCount;
+  final String narratorId;
+  final List<Map<String, dynamic>> topBooks;
+
+  const NarratorSpotlightData({
+    required this.narratorName,
+    this.avatarUrl,
+    required this.bookCount,
+    required this.narratorId,
+    required this.topBooks,
+  });
+}
+
+/// Provider for Narrator Spotlight section
+/// Picks the narrator with the most published books
+final narratorSpotlightProvider =
+    FutureProvider<NarratorSpotlightData?>((ref) async {
+  try {
+    // Step 1: Find narrators by counting books in book_metadata
+    // Get all narrator entries with book counts
+    final metadataResponse = await Supabase.instance.client
+        .from('book_metadata')
+        .select('narrator_id, narrator_name, audiobook_id')
+        .not('narrator_id', 'is', 'null');
+
+    final metadataList = List<Map<String, dynamic>>.from(metadataResponse);
+    if (metadataList.isEmpty) return null;
+
+    // Count books per narrator
+    final narratorCounts = <String, int>{};
+    final narratorNames = <String, String>{};
+    for (final meta in metadataList) {
+      final nId = (meta['narrator_id'] as String?) ?? '';
+      final nName = (meta['narrator_name'] as String?) ?? '';
+      if (nId.isEmpty) continue;
+      narratorCounts[nId] = (narratorCounts[nId] ?? 0) + 1;
+      if (nName.isNotEmpty) narratorNames[nId] = nName;
+    }
+
+    if (narratorCounts.isEmpty) return null;
+
+    // Pick narrator with most books
+    final topNarratorId = narratorCounts.entries
+        .reduce((a, b) => a.value > b.value ? a : b)
+        .key;
+    final topNarratorBookCount = narratorCounts[topNarratorId]!;
+    final topNarratorName = narratorNames[topNarratorId] ?? '';
+
+    if (topNarratorName.isEmpty) return null;
+
+    // Step 2: Get narrator's profile (avatar)
+    String? avatarUrl;
+    try {
+      final profileResponse = await Supabase.instance.client
+          .from('profiles')
+          .select('avatar_url')
+          .eq('id', topNarratorId)
+          .maybeSingle();
+      avatarUrl = profileResponse?['avatar_url'] as String?;
+    } catch (_) {
+      // Profile may not exist, that's fine
+    }
+
+    // Step 3: Get narrator's top books
+    final bookIds = metadataList
+        .where((m) => m['narrator_id'] == topNarratorId)
+        .map((m) => m['audiobook_id'] as int)
+        .toList();
+
+    final booksResponse = await Supabase.instance.client
+        .from('audiobooks')
+        .select('''
+          id, title_fa, title_en, cover_url, content_type, is_free,
+          total_duration_seconds, author_fa, play_count, status,
+          categories(name_fa),
+          book_metadata(narrator_name)
+        ''')
+        .inFilter('id', bookIds)
+        .eq('status', 'approved')
+        .order('play_count', ascending: false)
+        .limit(5);
+
+    final topBooks = List<Map<String, dynamic>>.from(booksResponse);
+    if (topBooks.isEmpty) return null;
+
+    return NarratorSpotlightData(
+      narratorName: topNarratorName,
+      avatarUrl: avatarUrl,
+      bookCount: topNarratorBookCount,
+      narratorId: topNarratorId,
+      topBooks: topBooks,
+    );
+  } catch (e) {
+    AppLogger.e('Error fetching narrator spotlight', error: e);
+    return null;
+  }
+});
+
+// ============================================
 // PODCAST PROVIDERS
 // ============================================
 // These providers fetch content where content_type = 'podcast'
