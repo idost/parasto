@@ -93,7 +93,7 @@ class Ebook {
         orElse: () => EbookStatus.draft,
       ),
       pageCount: (json['page_count'] as int?) ?? 0,
-      readCount: (json['read_count'] as int?) ?? 0,
+      readCount: (json['play_count'] as int?) ?? (json['read_count'] as int?) ?? 0,
       purchaseCount: (json['purchase_count'] as int?) ?? 0,
       avgRating: ((json['avg_rating'] as num?) ?? 0).toDouble(),
       reviewCount: (json['review_count'] as int?) ?? 0,
@@ -127,7 +127,7 @@ class Ebook {
     'is_featured': isFeatured,
     'status': status.name,
     'page_count': pageCount,
-    'read_count': readCount,
+    'play_count': readCount,
     'purchase_count': purchaseCount,
     'avg_rating': avgRating,
     'review_count': reviewCount,
@@ -176,7 +176,7 @@ class ReadingProgress {
   factory ReadingProgress.fromJson(Map<String, dynamic> json) {
     return ReadingProgress(
       oduserId: json['user_id'] as String,
-      ebookId: json['ebook_id'] as int,
+      ebookId: (json['audiobook_id'] as int?) ?? (json['ebook_id'] as int? ?? 0),
       currentChapterIndex: (json['current_chapter_index'] as int?) ?? 0,
       cfiPosition: json['cfi_position'] as String?,
       scrollPercentage: ((json['scroll_percentage'] as num?) ?? 0).toDouble(),
@@ -190,7 +190,7 @@ class ReadingProgress {
 
   Map<String, dynamic> toJson() => {
     'user_id': oduserId,
-    'ebook_id': ebookId,
+    'audiobook_id': ebookId,
     'current_chapter_index': currentChapterIndex,
     'cfi_position': cfiPosition,
     'scroll_percentage': scrollPercentage,
@@ -237,7 +237,7 @@ class EbookBookmark {
     return EbookBookmark(
       id: json['id'] as String,
       oduserId: json['user_id'] as String,
-      ebookId: json['ebook_id'] as int,
+      ebookId: (json['audiobook_id'] as int?) ?? (json['ebook_id'] as int? ?? 0),
       chapterIndex: (json['chapter_index'] as int?) ?? 0,
       cfiPosition: json['cfi_position'] as String?,
       highlightedText: json['highlighted_text'] as String?,
@@ -248,7 +248,7 @@ class EbookBookmark {
   }
 
   Map<String, dynamic> toJson() => {
-    'ebook_id': ebookId,
+    'audiobook_id': ebookId,
     'chapter_index': chapterIndex,
     'cfi_position': cfiPosition,
     'highlighted_text': highlightedText,

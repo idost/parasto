@@ -145,7 +145,7 @@ class _EbookDetailScreenState extends ConsumerState<EbookDetailScreen> {
   String? get coverUrl => widget.ebook['cover_url'] as String?;
   bool get isFree => widget.ebook['is_free'] as bool? ?? false;
   int get pageCount => widget.ebook['page_count'] as int? ?? 0;
-  int get readCount => widget.ebook['read_count'] as int? ?? 0;
+  int get readCount => widget.ebook['play_count'] as int? ?? widget.ebook['read_count'] as int? ?? 0;
   double get avgRating => (widget.ebook['avg_rating'] as num?)?.toDouble() ?? 0;
   int get reviewCount => widget.ebook['review_count'] as int? ?? 0;
   int get priceToman => widget.ebook['price_toman'] as int? ?? 0;

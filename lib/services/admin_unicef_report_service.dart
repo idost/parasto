@@ -171,10 +171,11 @@ class AdminUnicefReportService {
         }
       }
 
-      // Query ebooks count
+      // Query ebooks count (now in audiobooks table)
       final ebooksResponse = await _supabase
-          .from('ebooks')
+          .from('audiobooks')
           .select('id')
+          .eq('content_type', 'ebook')
           .eq('status', 'approved');
 
       return {

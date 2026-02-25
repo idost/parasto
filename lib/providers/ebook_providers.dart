@@ -61,12 +61,13 @@ final ebookPopularProvider = FutureProvider<List<Map<String, dynamic>>>((ref) as
 final ebookAllProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
   try {
     final response = await Supabase.instance.client
-        .from('ebooks')
+        .from('audiobooks')
         .select('''
           id, title_fa, title_en, cover_url, cover_storage_path, is_free, author_fa,
-          page_count, read_count, status, epub_storage_path,
+          page_count, play_count, status, epub_storage_path,
           categories(name_fa)
         ''')
+        .eq('content_type', 'ebook')
         .eq('status', 'approved')
         .order('created_at', ascending: false);
     return List<Map<String, dynamic>>.from(response);

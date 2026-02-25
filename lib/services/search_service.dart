@@ -161,14 +161,15 @@ class SearchService {
 
     try {
       final response = await _supabase
-          .from('ebooks')
+          .from('audiobooks')
           .select('''
             id, title_fa, title_en, cover_url, cover_storage_path, is_free,
-            author_fa, page_count, read_count, status
+            author_fa, page_count, play_count, status
           ''')
+          .eq('content_type', 'ebook')
           .eq('status', 'approved')
           .or('title_fa.ilike.%${query.trim()}%,title_en.ilike.%${query.trim()}%,author_fa.ilike.%${query.trim()}%')
-          .order('read_count', ascending: false)
+          .order('play_count', ascending: false)
           .range(offset, offset + limit - 1);
 
       // Mark results as ebooks so callers can distinguish

@@ -10,11 +10,12 @@ import 'package:myna/screens/admin/admin_upload_audiobook_screen.dart';
 import 'package:myna/screens/admin/admin_edit_audiobook_screen.dart';
 import 'package:myna/utils/farsi_utils.dart';
 
-/// Provider for all admin ebooks (no pagination - admins need to see everything)
+/// Provider for all admin ebooks (reads from audiobooks table where content_type='ebook')
 final adminEbooksProvider = FutureProvider.family<List<Map<String, dynamic>>, String>((ref, status) async {
   var query = Supabase.instance.client
-      .from('ebooks')
-      .select('*, categories(name_fa)');
+      .from('audiobooks')
+      .select('*, categories(name_fa)')
+      .eq('content_type', 'ebook');
 
   if (status == 'pending') {
     query = query.inFilter('status', ['submitted', 'under_review']);
@@ -129,7 +130,7 @@ class _AdminEbooksScreenState extends ConsumerState<AdminEbooksScreen>
     if (confirmed != true || !mounted) return;
 
     try {
-      await Supabase.instance.client.from('ebooks').update({
+      await Supabase.instance.client.from('audiobooks').update({
         'status': 'approved',
         'published_at': DateTime.now().toIso8601String(),
       }).inFilter('id', _selectedIds.toList());
@@ -194,7 +195,7 @@ class _AdminEbooksScreenState extends ConsumerState<AdminEbooksScreen>
     if (confirmed != true || !mounted) return;
 
     try {
-      await Supabase.instance.client.from('ebooks').update({
+      await Supabase.instance.client.from('audiobooks').update({
         'status': 'rejected',
         'rejection_reason': reasonController.text.isNotEmpty ? reasonController.text : null,
       }).inFilter('id', _selectedIds.toList());
@@ -451,7 +452,7 @@ class _AdminEbooksScreenState extends ConsumerState<AdminEbooksScreen>
     final isFree = ebook['is_free'] as bool? ?? false;
     final priceToman = ebook['price_toman'] as int? ?? 0;
     final pageCount = ebook['page_count'] as int? ?? 0;
-    final readCount = ebook['read_count'] as int? ?? 0;
+    final readCount = ebook['play_count'] as int? ?? ebook['read_count'] as int? ?? 0;
     final categoryName = (ebook['categories'] as Map<String, dynamic>?)?['name_fa'] as String?;
     final createdAt = ebook['created_at'] != null
         ? DateTime.parse(ebook['created_at'] as String)
@@ -665,57 +666,16 @@ class _AdminEbooksScreenState extends ConsumerState<AdminEbooksScreen>
     return '${FarsiUtils.toFarsiDigits(date.year)}/${FarsiUtils.toFarsiDigits(date.month.toString().padLeft(2, '0'))}/${FarsiUtils.toFarsiDigits(date.day.toString().padLeft(2, '0'))}';
   }
 
-  /// Looks up the corresponding audiobook row for an ebook (bridge until Phase 5
-  /// migrates ebook reads to the audiobooks table).
-  Future<void> _navigateToEditEbook(Map<String, dynamic> ebook) async {
-    final titleFa = ebook['title_fa'] as String?;
-    if (titleFa == null || titleFa.isEmpty) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('عنوان ایبوک یافت نشد')),
-        );
-      }
-      return;
-    }
-
-    try {
-      final result = await Supabase.instance.client
-          .from('audiobooks')
-          .select()
-          .eq('content_type', 'ebook')
-          .eq('title_fa', titleFa)
-          .maybeSingle();
-
-      if (!mounted) return;
-
-      if (result != null) {
-        final didUpdate = await Navigator.of(context).push<bool>(
-          MaterialPageRoute<bool>(
-            builder: (_) => AdminEditAudiobookScreen(
-              audiobook: result,
-              onUpdate: () => ref.invalidate(adminEbooksProvider),
-            ),
-          ),
-        );
-        if (didUpdate == true) {
-          ref.invalidate(adminEbooksProvider);
-        }
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('ایبوک در جدول محتوا یافت نشد')),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('خطا در بارگذاری: $e')),
-        );
-      }
-    }
-  }
-
   void _showEbookDetails(Map<String, dynamic> ebook) {
-    _navigateToEditEbook(ebook);
+    // Data is already from audiobooks table — navigate directly
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => AdminEditAudiobookScreen(
+          audiobook: ebook,
+          onUpdate: () => ref.invalidate(adminEbooksProvider),
+        ),
+      ),
+    );
   }
 
   Future<void> _handleAction(String action, Map<String, dynamic> ebook) async {
@@ -724,7 +684,7 @@ class _AdminEbooksScreenState extends ConsumerState<AdminEbooksScreen>
     switch (action) {
       case 'view':
       case 'edit':
-        await _navigateToEditEbook(ebook);
+        _showEbookDetails(ebook);
         break;
 
       case 'approve':
@@ -761,7 +721,7 @@ class _AdminEbooksScreenState extends ConsumerState<AdminEbooksScreen>
         update['rejection_reason'] = rejectionReason;
       }
 
-      await Supabase.instance.client.from('ebooks').update(update).eq('id', id);
+      await Supabase.instance.client.from('audiobooks').update(update).eq('id', id);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -815,7 +775,7 @@ class _AdminEbooksScreenState extends ConsumerState<AdminEbooksScreen>
 
   Future<void> _toggleFeatured(int id, bool featured) async {
     try {
-      await Supabase.instance.client.from('ebooks').update({'is_featured': featured}).eq('id', id);
+      await Supabase.instance.client.from('audiobooks').update({'is_featured': featured}).eq('id', id);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -844,7 +804,7 @@ class _AdminEbooksScreenState extends ConsumerState<AdminEbooksScreen>
     Map<String, dynamic>? ebook;
     try {
       final response = await Supabase.instance.client
-          .from('ebooks')
+          .from('audiobooks')
           .select('title_fa, status, cover_storage_path, epub_storage_path')
           .eq('id', id)
           .maybeSingle();
@@ -979,7 +939,7 @@ class _AdminEbooksScreenState extends ConsumerState<AdminEbooksScreen>
 
       // Step 2: Delete the database record
       // CASCADE will automatically delete: entitlements, reading_progress, bookmarks, reviews
-      await Supabase.instance.client.from('ebooks').delete().eq('id', id);
+      await Supabase.instance.client.from('audiobooks').delete().eq('id', id);
 
       if (mounted) {
         // Hide loading snackbar and show success

@@ -22,15 +22,16 @@ class EbookService {
   Future<List<Map<String, dynamic>>> getFeaturedEbooks({int limit = 10}) async {
     try {
       final response = await _client
-          .from('ebooks')
+          .from('audiobooks')
           .select('''
             id, title_fa, title_en, cover_url, cover_storage_path, is_free, author_fa,
-            page_count, read_count, is_featured, status, epub_storage_path,
+            page_count, play_count, is_featured, status, epub_storage_path,
             categories(name_fa)
           ''')
+          .eq('content_type', 'ebook')
           .eq('status', 'approved')
           .eq('is_featured', true)
-          .order('read_count', ascending: false)
+          .order('play_count', ascending: false)
           .limit(limit);
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
@@ -43,12 +44,13 @@ class EbookService {
   Future<List<Map<String, dynamic>>> getNewReleases({int limit = 10}) async {
     try {
       final response = await _client
-          .from('ebooks')
+          .from('audiobooks')
           .select('''
             id, title_fa, title_en, cover_url, cover_storage_path, is_free, author_fa,
-            page_count, read_count, status, epub_storage_path,
+            page_count, play_count, status, epub_storage_path,
             categories(name_fa)
           ''')
+          .eq('content_type', 'ebook')
           .eq('status', 'approved')
           .order('created_at', ascending: false)
           .limit(limit);
@@ -63,14 +65,15 @@ class EbookService {
   Future<List<Map<String, dynamic>>> getPopularEbooks({int limit = 10}) async {
     try {
       final response = await _client
-          .from('ebooks')
+          .from('audiobooks')
           .select('''
             id, title_fa, title_en, cover_url, cover_storage_path, is_free, author_fa,
-            page_count, read_count, status, epub_storage_path,
+            page_count, play_count, status, epub_storage_path,
             categories(name_fa)
           ''')
+          .eq('content_type', 'ebook')
           .eq('status', 'approved')
-          .order('read_count', ascending: false)
+          .order('play_count', ascending: false)
           .order('created_at', ascending: false)
           .limit(limit);
       return List<Map<String, dynamic>>.from(response);
@@ -84,12 +87,13 @@ class EbookService {
   Future<List<Map<String, dynamic>>> getEbooksByCategory(int categoryId, {int limit = 20}) async {
     try {
       final response = await _client
-          .from('ebooks')
+          .from('audiobooks')
           .select('''
             id, title_fa, title_en, cover_url, cover_storage_path, is_free, author_fa,
-            page_count, read_count, status, epub_storage_path,
+            page_count, play_count, status, epub_storage_path,
             categories(name_fa)
           ''')
+          .eq('content_type', 'ebook')
           .eq('status', 'approved')
           .eq('category_id', categoryId)
           .order('created_at', ascending: false)
@@ -105,11 +109,12 @@ class EbookService {
   Future<Map<String, dynamic>?> getEbookDetails(int ebookId) async {
     try {
       final response = await _client
-          .from('ebooks')
+          .from('audiobooks')
           .select('''
             *,
             categories(name_fa, name_en)
           ''')
+          .eq('content_type', 'ebook')
           .eq('id', ebookId)
           .maybeSingle();
       return response;
@@ -156,7 +161,7 @@ class EbookService {
           .from('ebook_entitlements')
           .select('id')
           .eq('user_id', user.id)
-          .eq('ebook_id', ebookId)
+          .eq('audiobook_id', ebookId)
           .maybeSingle();
       return response != null;
     } catch (e) {
@@ -177,7 +182,7 @@ class EbookService {
       AppLogger.i('Claiming free ebook $ebookId for user ${user.id}');
       await _client.from('ebook_entitlements').insert({
         'user_id': user.id,
-        'ebook_id': ebookId,
+        'audiobook_id': ebookId,
         'source': 'free',
       });
       AppLogger.i('Free ebook claimed successfully: $ebookId');
@@ -202,8 +207,8 @@ class EbookService {
       final response = await _client
           .from('ebook_entitlements')
           .select('''
-            ebook_id,
-            ebooks(
+            audiobook_id,
+            audiobooks(
               id, title_fa, title_en, cover_url, cover_storage_path, is_free, author_fa,
               page_count, status, epub_storage_path
             )
@@ -211,8 +216,8 @@ class EbookService {
           .eq('user_id', user.id);
 
       return (response as List)
-          .where((item) => item['ebooks'] != null)
-          .map((item) => Map<String, dynamic>.from(item['ebooks'] as Map))
+          .where((item) => item['audiobooks'] != null)
+          .map((item) => Map<String, dynamic>.from(item['audiobooks'] as Map))
           .toList();
     } catch (e) {
       AppLogger.e('Error fetching owned ebooks', error: e);
@@ -234,7 +239,7 @@ class EbookService {
           .from('reading_progress')
           .select('*')
           .eq('user_id', user.id)
-          .eq('ebook_id', ebookId)
+          .eq('audiobook_id', ebookId)
           .maybeSingle();
 
       if (response == null) return null;
@@ -265,14 +270,14 @@ class EbookService {
 
       await _client.from('reading_progress').upsert({
         'user_id': user.id,
-        'ebook_id': ebookId,
+        'audiobook_id': ebookId,
         'current_chapter_index': chapterIndex,
         'cfi_position': cfiPosition,
         'scroll_percentage': scrollPercentage,
         'completion_percentage': completionPercentage,
         'total_read_time_seconds': totalReadTime,
         'last_read_at': DateTime.now().toIso8601String(),
-      }, onConflict: 'user_id,ebook_id');
+      }, onConflict: 'user_id,audiobook_id');
 
       AppLogger.d('Reading progress saved: ebook=$ebookId, chapter=$chapterIndex, completion=$completionPercentage%');
       return true;
@@ -291,8 +296,8 @@ class EbookService {
       final response = await _client
           .from('reading_progress')
           .select('''
-            ebook_id, completion_percentage, last_read_at, current_chapter_index,
-            ebooks(
+            audiobook_id, completion_percentage, last_read_at, current_chapter_index,
+            audiobooks(
               id, title_fa, title_en, cover_url, cover_storage_path, is_free, author_fa,
               page_count, status, epub_storage_path
             )
@@ -303,9 +308,9 @@ class EbookService {
           .limit(limit);
 
       return (response as List)
-          .where((item) => item['ebooks'] != null && item['ebooks']['status'] == 'approved')
+          .where((item) => item['audiobooks'] != null && item['audiobooks']['status'] == 'approved')
           .map((item) {
-            final ebook = Map<String, dynamic>.from(item['ebooks'] as Map);
+            final ebook = Map<String, dynamic>.from(item['audiobooks'] as Map);
             ebook['progress'] = {
               'completion_percentage': item['completion_percentage'],
               'current_chapter_index': item['current_chapter_index'],
@@ -334,7 +339,7 @@ class EbookService {
           .from('ebook_bookmarks')
           .select('*')
           .eq('user_id', user.id)
-          .eq('ebook_id', ebookId)
+          .eq('audiobook_id', ebookId)
           .order('created_at', ascending: false);
 
       return (response as List)
@@ -363,7 +368,7 @@ class EbookService {
           .from('ebook_bookmarks')
           .insert({
             'user_id': user.id,
-            'ebook_id': ebookId,
+            'audiobook_id': ebookId,
             'chapter_index': chapterIndex,
             'cfi_position': cfiPosition,
             'highlighted_text': highlightedText,
