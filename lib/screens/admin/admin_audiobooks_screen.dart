@@ -355,209 +355,223 @@ class _AdminAudiobooksScreenState extends ConsumerState<AdminAudiobooksScreen>
         });
       }
 
-      // For approval queue, default to pending tab
-      if (isApprovalQueue && _tabController.index != 0) {
+      // For approval queue, default to pending tab (index 1 after reorder)
+      if (isApprovalQueue && _tabController.index != 1) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          _tabController.animateTo(0);
+          _tabController.animateTo(1);
         });
       }
     }
 
+    // ── Build the body Column (shared between embedded & standalone) ──
+    final body = Column(
+      children: [
+        // Header (hidden when embedded in hub)
+        if (!isEmbedded)
+          AdminScreenHeader(
+            title: isApprovalQueue
+                ? 'صف تأیید محتوا'
+                : (isPodcast ? 'مدیریت پادکست‌ها' : (isMusic ? 'مدیریت موسیقی' : 'مدیریت کتاب‌ها')),
+            icon: isApprovalQueue
+                ? Icons.pending_actions_rounded
+                : (isPodcast ? Icons.podcasts_rounded : (isMusic ? Icons.library_music_rounded : Icons.menu_book_rounded)),
+            actions: [
+              // Selection mode toggle
+              IconButton(
+                onPressed: _toggleSelectionMode,
+                icon: Icon(
+                  _isSelectionMode ? Icons.close : Icons.checklist_rounded,
+                  color: _isSelectionMode ? AppColors.error : AppColors.textSecondary,
+                ),
+                tooltip: _isSelectionMode ? 'لغو انتخاب' : 'انتخاب چندتایی',
+              ),
+            ],
+          ),
+
+        // Bulk action bar (when items selected)
+        if (_isSelectionMode && _selectedIds.isNotEmpty)
+          _buildBulkActionBar(),
+
+        // Tabs — "همه" first (rightmost in RTL)
+        Container(
+          color: AppColors.surface,
+          child: TabBar(
+            controller: _tabController,
+            labelColor: AppColors.primary,
+            unselectedLabelColor: AppColors.textSecondary,
+            indicatorColor: AppColors.primary,
+            indicatorWeight: 3,
+            isScrollable: true,
+            tabs: const [
+              Tab(text: 'همه'),
+              Tab(text: 'صف بررسی'),
+              Tab(text: 'منتشر شده'),
+              Tab(text: 'رد شده'),
+              Tab(text: 'ویژه'),
+            ],
+          ),
+        ),
+
+        // Body
+        Expanded(
+          child: Column(
+            children: [
+              // Content type filter (hidden when embedded — hub tabs handle type selection)
+              if (!isEmbedded && activeRoute != '/admin/content/books' && activeRoute != '/admin/content/music' && activeRoute != '/admin/content/podcasts')
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        _buildContentTypeChip(
+                          label: 'همه',
+                          isSelected: _contentTypeFilter == null,
+                          onTap: () => setState(() => _contentTypeFilter = null),
+                        ),
+                        const SizedBox(width: 8),
+                        _buildContentTypeChip(
+                          label: '📚 کتاب‌ها',
+                          isSelected: _contentTypeFilter == 'books',
+                          onTap: () => setState(() => _contentTypeFilter = 'books'),
+                        ),
+                        const SizedBox(width: 8),
+                        _buildContentTypeChip(
+                          label: '🎵 موسیقی',
+                          isSelected: _contentTypeFilter == 'music',
+                          onTap: () => setState(() => _contentTypeFilter = 'music'),
+                        ),
+                        const SizedBox(width: 8),
+                        _buildContentTypeChip(
+                          label: '🎙️ پادکست',
+                          isSelected: _contentTypeFilter == 'podcasts',
+                          onTap: () => setState(() => _contentTypeFilter = 'podcasts'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+              // Search bar and filter button
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        decoration: InputDecoration(
+                          hintText: _contentTypeFilter == 'podcasts' ? 'جستجوی پادکست...' : (_contentTypeFilter == 'music' ? 'جستجوی موسیقی...' : 'جستجوی کتاب...'),
+                          prefixIcon: const Icon(Icons.search),
+                          filled: true,
+                          fillColor: AppColors.surface,
+                          border: OutlineInputBorder(borderRadius: AppRadius.medium, borderSide: BorderSide.none),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        ),
+                        onChanged: (value) => setState(() => _searchQuery = value.toLowerCase()),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    FilterButton(
+                      filters: _filters,
+                      onTap: () => setState(() => _showFilters = !_showFilters),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Advanced filter panel
+              if (_showFilters)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                  child: AdvancedFilterPanel(
+                    filters: _filters,
+                    onFiltersChanged: (newFilters) => setState(() => _filters = newFilters),
+                    onClose: () => setState(() => _showFilters = false),
+                  ),
+                ),
+
+              // NeverScrollableScrollPhysics prevents the inner TabBarView
+              // from competing with the hub's outer TabBarView for swipe gestures.
+              // Status tabs are switched by tapping the TabBar above.
+              Expanded(
+                child: TabBarView(
+                  controller: _tabController,
+                  physics: isEmbedded ? const NeverScrollableScrollPhysics() : null,
+                  children: [
+                    _AudiobooksList(
+                      status: 'all',
+                      searchQuery: _searchQuery,
+                      contentTypeFilter: _contentTypeFilter,
+                      filters: _filters,
+                      onRefresh: _refreshAll,
+                      isSelectionMode: _isSelectionMode,
+                      selectedIds: _selectedIds,
+                      onToggleSelection: _toggleSelection,
+                      onSelectAll: _selectAll,
+                    ),
+                    _AudiobooksList(
+                      status: 'pending',
+                      searchQuery: _searchQuery,
+                      contentTypeFilter: _contentTypeFilter,
+                      filters: _filters,
+                      onRefresh: _refreshAll,
+                      isSelectionMode: _isSelectionMode,
+                      selectedIds: _selectedIds,
+                      onToggleSelection: _toggleSelection,
+                      onSelectAll: _selectAll,
+                    ),
+                    _AudiobooksList(
+                      status: 'approved',
+                      searchQuery: _searchQuery,
+                      contentTypeFilter: _contentTypeFilter,
+                      filters: _filters,
+                      onRefresh: _refreshAll,
+                      isSelectionMode: _isSelectionMode,
+                      selectedIds: _selectedIds,
+                      onToggleSelection: _toggleSelection,
+                      onSelectAll: _selectAll,
+                    ),
+                    _AudiobooksList(
+                      status: 'rejected',
+                      searchQuery: _searchQuery,
+                      contentTypeFilter: _contentTypeFilter,
+                      filters: _filters,
+                      onRefresh: _refreshAll,
+                      isSelectionMode: _isSelectionMode,
+                      selectedIds: _selectedIds,
+                      onToggleSelection: _toggleSelection,
+                      onSelectAll: _selectAll,
+                    ),
+                    _AudiobooksList(
+                      status: 'featured',
+                      searchQuery: _searchQuery,
+                      contentTypeFilter: _contentTypeFilter,
+                      filters: _filters,
+                      onRefresh: _refreshAll,
+                      isSelectionMode: _isSelectionMode,
+                      selectedIds: _selectedIds,
+                      onToggleSelection: _toggleSelection,
+                      onSelectAll: _selectAll,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+
+    // When embedded in hub, return body directly (no Scaffold).
+    // A nested Scaffold inside the hub's TabBarView creates a duplicate
+    // gesture scope that intercepts touch events from reaching the inner TabBar.
+    if (isEmbedded) {
+      return body;
+    }
+
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: Column(
-        children: [
-          // Header (hidden when embedded in hub)
-          if (!isEmbedded)
-            AdminScreenHeader(
-              title: isApprovalQueue
-                  ? 'صف تأیید محتوا'
-                  : (isPodcast ? 'مدیریت پادکست‌ها' : (isMusic ? 'مدیریت موسیقی' : 'مدیریت کتاب‌ها')),
-              icon: isApprovalQueue
-                  ? Icons.pending_actions_rounded
-                  : (isPodcast ? Icons.podcasts_rounded : (isMusic ? Icons.library_music_rounded : Icons.menu_book_rounded)),
-              actions: [
-                // Selection mode toggle
-                IconButton(
-                  onPressed: _toggleSelectionMode,
-                  icon: Icon(
-                    _isSelectionMode ? Icons.close : Icons.checklist_rounded,
-                    color: _isSelectionMode ? AppColors.error : AppColors.textSecondary,
-                  ),
-                  tooltip: _isSelectionMode ? 'لغو انتخاب' : 'انتخاب چندتایی',
-                ),
-              ],
-            ),
-
-          // Bulk action bar (when items selected)
-          if (_isSelectionMode && _selectedIds.isNotEmpty)
-            _buildBulkActionBar(),
-
-          // Tabs
-          Container(
-            color: AppColors.surface,
-            child: TabBar(
-              controller: _tabController,
-              labelColor: AppColors.primary,
-              unselectedLabelColor: AppColors.textSecondary,
-              indicatorColor: AppColors.primary,
-              indicatorWeight: 3,
-              isScrollable: true,
-              tabs: const [
-                Tab(text: 'صف بررسی'),
-                Tab(text: 'منتشر شده'),
-                Tab(text: 'رد شده'),
-                Tab(text: 'ویژه'),
-                Tab(text: 'همه'),
-              ],
-            ),
-          ),
-
-          // Body
-          Expanded(
-            child: Column(
-              children: [
-                // Content type filter (hidden when embedded — hub tabs handle type selection)
-                if (!isEmbedded && activeRoute != '/admin/content/books' && activeRoute != '/admin/content/music' && activeRoute != '/admin/content/podcasts')
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: [
-                          _buildContentTypeChip(
-                            label: 'همه',
-                            isSelected: _contentTypeFilter == null,
-                            onTap: () => setState(() => _contentTypeFilter = null),
-                          ),
-                          const SizedBox(width: 8),
-                          _buildContentTypeChip(
-                            label: '📚 کتاب‌ها',
-                            isSelected: _contentTypeFilter == 'books',
-                            onTap: () => setState(() => _contentTypeFilter = 'books'),
-                          ),
-                          const SizedBox(width: 8),
-                          _buildContentTypeChip(
-                            label: '🎵 موسیقی',
-                            isSelected: _contentTypeFilter == 'music',
-                            onTap: () => setState(() => _contentTypeFilter = 'music'),
-                          ),
-                          const SizedBox(width: 8),
-                          _buildContentTypeChip(
-                            label: '🎙️ پادکست',
-                            isSelected: _contentTypeFilter == 'podcasts',
-                            onTap: () => setState(() => _contentTypeFilter = 'podcasts'),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                // Search bar and filter button
-                Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          decoration: InputDecoration(
-                            hintText: _contentTypeFilter == 'podcasts' ? 'جستجوی پادکست...' : (_contentTypeFilter == 'music' ? 'جستجوی موسیقی...' : 'جستجوی کتاب...'),
-                            prefixIcon: const Icon(Icons.search),
-                            filled: true,
-                            fillColor: AppColors.surface,
-                            border: OutlineInputBorder(borderRadius: AppRadius.medium, borderSide: BorderSide.none),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                          ),
-                          onChanged: (value) => setState(() => _searchQuery = value.toLowerCase()),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      FilterButton(
-                        filters: _filters,
-                        onTap: () => setState(() => _showFilters = !_showFilters),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Advanced filter panel
-                if (_showFilters)
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                    child: AdvancedFilterPanel(
-                      filters: _filters,
-                      onFiltersChanged: (newFilters) => setState(() => _filters = newFilters),
-                      onClose: () => setState(() => _showFilters = false),
-                    ),
-                  ),
-
-                Expanded(
-                  child: TabBarView(
-                    controller: _tabController,
-                    children: [
-                      _AudiobooksList(
-                        status: 'pending',
-                        searchQuery: _searchQuery,
-                        contentTypeFilter: _contentTypeFilter,
-                        filters: _filters,
-                        onRefresh: _refreshAll,
-                        isSelectionMode: _isSelectionMode,
-                        selectedIds: _selectedIds,
-                        onToggleSelection: _toggleSelection,
-                        onSelectAll: _selectAll,
-                      ),
-                      _AudiobooksList(
-                        status: 'approved',
-                        searchQuery: _searchQuery,
-                        contentTypeFilter: _contentTypeFilter,
-                        filters: _filters,
-                        onRefresh: _refreshAll,
-                        isSelectionMode: _isSelectionMode,
-                        selectedIds: _selectedIds,
-                        onToggleSelection: _toggleSelection,
-                        onSelectAll: _selectAll,
-                      ),
-                      _AudiobooksList(
-                        status: 'rejected',
-                        searchQuery: _searchQuery,
-                        contentTypeFilter: _contentTypeFilter,
-                        filters: _filters,
-                        onRefresh: _refreshAll,
-                        isSelectionMode: _isSelectionMode,
-                        selectedIds: _selectedIds,
-                        onToggleSelection: _toggleSelection,
-                        onSelectAll: _selectAll,
-                      ),
-                      _AudiobooksList(
-                        status: 'featured',
-                        searchQuery: _searchQuery,
-                        contentTypeFilter: _contentTypeFilter,
-                        filters: _filters,
-                        onRefresh: _refreshAll,
-                        isSelectionMode: _isSelectionMode,
-                        selectedIds: _selectedIds,
-                        onToggleSelection: _toggleSelection,
-                        onSelectAll: _selectAll,
-                      ),
-                      _AudiobooksList(
-                        status: 'all',
-                        searchQuery: _searchQuery,
-                        contentTypeFilter: _contentTypeFilter,
-                        filters: _filters,
-                        onRefresh: _refreshAll,
-                        isSelectionMode: _isSelectionMode,
-                        selectedIds: _selectedIds,
-                        onToggleSelection: _toggleSelection,
-                        onSelectAll: _selectAll,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+      body: body,
       floatingActionButton: _isSelectionMode
           ? null
           : FloatingActionButton.extended(

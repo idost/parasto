@@ -24,6 +24,7 @@ import 'package:myna/providers/user_providers.dart';
 import 'package:myna/providers/app_mode_provider.dart';
 import 'package:myna/screens/listener/settings_screen.dart' show settingsProvider;
 import 'package:myna/screens/splash_screen.dart';
+import 'package:myna/screens/auth/set_new_password_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -127,6 +128,7 @@ class MynaApp extends ConsumerStatefulWidget {
 }
 
 class _MynaAppState extends ConsumerState<MynaApp> {
+  final _navigatorKey = GlobalKey<NavigatorState>();
   bool _isLoading = true;
   bool _isLoggedIn = false;
   String? _role;
@@ -154,6 +156,15 @@ class _MynaAppState extends ConsumerState<MynaApp> {
         AppLogger.i('User signed out - invalidating providers');
         invalidateUserProviders(ref);
         _lastUserId = null; // Clear last user ID on logout
+      } else if (event == AuthChangeEvent.passwordRecovery) {
+        // Deep link from password reset email opened the app.
+        // supabase_flutter has already exchanged the recovery token.
+        AppLogger.i('Password recovery event - navigating to set new password');
+        _navigatorKey.currentState?.push(
+          MaterialPageRoute<void>(
+            builder: (_) => const SetNewPasswordScreen(),
+          ),
+        );
       } else if (event == AuthChangeEvent.signedIn && newUserId != null) {
         AppLogger.i('User signed in - refreshing providers for user');
         invalidateUserProviders(ref);
@@ -364,6 +375,7 @@ class _MynaAppState extends ConsumerState<MynaApp> {
   Widget build(BuildContext context) {
     final settings = ref.watch(settingsProvider);
     return MaterialApp(
+      navigatorKey: _navigatorKey,
       title: Env.appName,
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,

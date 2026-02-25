@@ -2507,4 +2507,83 @@ class AppStrings {
         return '$count китоб хонда';
     }
   }
+
+  // ── Password Reset Deep Link ──────────────────────────────────────
+
+  static String get setNewPassword {
+    switch (_currentLanguage) {
+      case AppLanguage.fa:
+        return 'تنظیم رمز عبور جدید';
+      case AppLanguage.en:
+        return 'Set New Password';
+      case AppLanguage.tg:
+        return 'Рамзи нави убурро муқаррар кунед';
+    }
+  }
+
+  static String get setNewPasswordHint {
+    switch (_currentLanguage) {
+      case AppLanguage.fa:
+        return 'رمز عبور جدید خود را وارد کنید.';
+      case AppLanguage.en:
+        return 'Enter your new password.';
+      case AppLanguage.tg:
+        return 'Рамзи нави убури худро ворид кунед.';
+    }
+  }
+
+  static String get newPassword {
+    switch (_currentLanguage) {
+      case AppLanguage.fa:
+        return 'رمز عبور جدید';
+      case AppLanguage.en:
+        return 'New password';
+      case AppLanguage.tg:
+        return 'Рамзи нави убур';
+    }
+  }
+
+  static String get confirmPassword {
+    switch (_currentLanguage) {
+      case AppLanguage.fa:
+        return 'تکرار رمز عبور';
+      case AppLanguage.en:
+        return 'Confirm password';
+      case AppLanguage.tg:
+        return 'Такрори рамзи убур';
+    }
+  }
+
+  static String get savePassword {
+    switch (_currentLanguage) {
+      case AppLanguage.fa:
+        return 'ذخیره رمز عبور';
+      case AppLanguage.en:
+        return 'Save Password';
+      case AppLanguage.tg:
+        return 'Захираи рамзи убур';
+    }
+  }
+
+  static String get passwordChangedSuccess {
+    switch (_currentLanguage) {
+      case AppLanguage.fa:
+        return 'رمز عبور با موفقیت تغییر کرد';
+      case AppLanguage.en:
+        return 'Password changed successfully';
+      case AppLanguage.tg:
+        return 'Рамзи убур бо муваффақият иваз шуд';
+    }
+  }
+
+  static String get passwordChangeError {
+    switch (_currentLanguage) {
+      case AppLanguage.fa:
+        return 'خطا در تغییر رمز عبور. لطفاً دوباره تلاش کنید.';
+      case AppLanguage.en:
+        return 'Error changing password. Please try again.';
+      case AppLanguage.tg:
+        return 'Хатогӣ ҳангоми иваз кардани рамзи убур. Лутфан дубора кӯшиш кунед.';
+    }
+  }
 }

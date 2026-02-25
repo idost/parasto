@@ -81,7 +81,10 @@ class AuthService {
   Future<void> resetPassword(String email) async {
     AppLogger.d('AuthService: Requesting password reset for email: ${email.substring(0, 3)}***');
     try {
-      await _supabase.auth.resetPasswordForEmail(email);
+      await _supabase.auth.resetPasswordForEmail(
+        email,
+        redirectTo: 'io.supabase.parasto://reset-callback',
+      );
       AppLogger.d('AuthService: Password reset request sent successfully');
     } catch (e, st) {
       AppLogger.e('AuthService: Password reset request failed', error: e, stackTrace: st);

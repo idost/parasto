@@ -42,6 +42,7 @@
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<!-- Google Sign-In URL scheme (reversed iOS client ID) -->
+	<!-- Supabase deep link scheme (password reset, email confirm) -->
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
@@ -50,6 +51,14 @@
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>com.googleusercontent.apps.828781701952-sk3ikg8r68ve5m61kgsm8o21sp4m3l8e</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>io.supabase.parasto</string>
 			</array>
 		</dict>
 	</array>
