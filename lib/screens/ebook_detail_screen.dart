@@ -556,7 +556,7 @@ class _EbookDetailScreenState extends ConsumerState<EbookDetailScreen> {
         const SizedBox(height: 12),
         // Sample preview button
         // NOTE: Sample preview requires either:
-        // 1. A sample_epub_path field in ebooks table with first N pages extracted, OR
+        // 1. A sample_epub_path field in audiobooks table with first N pages extracted, OR
         // 2. Server-side EPUB extraction to generate preview on demand
         // For now, show a "coming soon" message until backend support is added.
         SizedBox(

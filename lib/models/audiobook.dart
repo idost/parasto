@@ -113,9 +113,6 @@ class Audiobook {
     'is_free': isFree,
     'is_featured': isFeatured,
     'content_type': contentType,
-    'is_music': isMusic,       // backward compat — derived from contentType
-    'is_podcast': isPodcast,   // backward compat — derived from contentType
-    'is_article': isArticle,   // backward compat — derived from contentType
     'is_parasto_brand': isParastoBrand,
     'status': status,
     'total_duration_seconds': totalDurationSeconds,

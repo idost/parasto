@@ -145,8 +145,6 @@ class AudiobookDetail {
     'published_at': publishedAt?.toIso8601String(),
     'created_at': createdAt.toIso8601String(),
     'content_type': contentType,
-    'is_music': isMusic,       // backward compat — derived from contentType
-    'is_podcast': isPodcast,   // backward compat — derived from contentType
     'is_parasto_brand': isParastoBrand,
     if (bookMetadata != null) 'book_metadata': bookMetadata!.toJson(),
     if (musicMetadata != null) 'music_metadata': musicMetadata!.toJson(),

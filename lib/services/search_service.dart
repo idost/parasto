@@ -38,7 +38,7 @@ class SearchService {
         'search_content',
         params: {
           'query_text': trimmedQuery,
-          'content_type': contentType,
+          'type_filter': contentType,
           'category_filter': categoryId,
           'free_only': freeOnly,
           'result_limit': limit,
@@ -150,7 +150,7 @@ class SearchService {
     }
   }
 
-  /// Search ebooks table (separate from audiobooks)
+  /// Search ebooks (content_type = 'ebook' in audiobooks table)
   /// Returns results matching the query by title or author
   static Future<List<Map<String, dynamic>>> searchEbooks({
     required String query,

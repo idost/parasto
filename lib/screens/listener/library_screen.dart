@@ -869,7 +869,7 @@ class _OwnedItemsTabState extends ConsumerState<_OwnedItemsTab> {
     );
   }
 
-  /// Ebook tab — uses ownedEbooksProvider (separate ebooks table)
+  /// Ebook tab — uses ownedEbooksProvider
   Widget _buildEbookTab(BuildContext context) {
     final ebooksAsync = ref.watch(ownedEbooksProvider);
 

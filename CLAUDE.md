@@ -136,14 +136,15 @@ All content access goes through `AccessGateService.checkAccess()`:
 
 ### Content Types
 
-All content shares the same database structure (content flags):
-- `is_music` → music (1:1 square cover)
-- `is_podcast` → podcast (1:1 square cover)
-- `is_article` → article (1:1 square cover)
-- `epub_url != null || is_ebook` → ebook (2:3 portrait cover)
-- Default → audiobook (2:3 portrait cover)
+All content lives in a single `audiobooks` table with a `content_type` TEXT column:
+- `'music'` → music (1:1 square cover)
+- `'podcast'` → podcast (1:1 square cover)
+- `'article'` → article (1:1 square cover)
+- `'ebook'` → ebook (2:3 portrait cover)
+- `'audiobook'` (default) → audiobook (2:3 portrait cover)
 
 Detection logic: `ContentTypeMicroLabel._detectType()` and `ContentTypeMicroIcon._detectType()`.
+The old boolean flags (`is_music`, `is_podcast`, `is_article`) have been removed.
 
 ### Card System
 

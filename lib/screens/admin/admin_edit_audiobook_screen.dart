@@ -400,12 +400,7 @@ class _AdminEditAudiobookScreenState extends ConsumerState<AdminEditAudiobookScr
           'is_free': _isFree,
           'is_featured': _isFeatured,
           'is_parasto_brand': _isParastoBrand, // Display as "پرستو" brand
-          // content_type is the new source of truth for type detection
           'content_type': _contentType,
-          // Keep boolean flags for backward compatibility
-          'is_music': _isMusic,
-          'is_podcast': _isPodcast,
-          'is_article': false,
           'updated_at': DateTime.now().toIso8601String(),
         };
 

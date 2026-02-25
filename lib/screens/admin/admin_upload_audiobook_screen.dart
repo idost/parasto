@@ -402,10 +402,7 @@ class _AdminUploadAudiobookScreenState extends ConsumerState<AdminUploadAudioboo
           'cover_url': coverUrl,
           'price_toman': price,
           'is_free': _isFree,
-          // content_type is the new source of truth for type detection
           'content_type': _contentType,
-          // Keep boolean flags for backward compatibility
-          'is_music': _isMusic,
           'is_parasto_brand': _isEbook ? false : _isParastoBrand,
           'status': 'draft',
           'language': 'fa',
@@ -435,29 +432,11 @@ class _AdminUploadAudiobookScreenState extends ConsumerState<AdminUploadAudioboo
           insertData['uploader_id'] = adminId;
         }
 
-        // Insert with is_podcast and is_article columns (backward compat)
-        try {
-          response = await supabase
-              .from('audiobooks')
-              .insert({...insertData, 'is_podcast': _isPodcast, 'is_article': _isArticle})
-              .select()
-              .maybeSingle();
-        } catch (columnError) {
-          // If new columns don't exist yet, retry without them
-          final errorStr = columnError.toString().toLowerCase();
-          if (errorStr.contains('is_podcast') || errorStr.contains('is-podcast') ||
-              errorStr.contains('is_article') || errorStr.contains('is-article') ||
-              errorStr.contains('pgrst204') || errorStr.contains('42703')) {
-            AppLogger.w('New columns not found, inserting without them');
-            response = await supabase
-                .from('audiobooks')
-                .insert(insertData)
-                .select()
-                .maybeSingle();
-          } else {
-            rethrow;
-          }
-        }
+        response = await supabase
+            .from('audiobooks')
+            .insert(insertData)
+            .select()
+            .maybeSingle();
       } catch (dbError) {
         // DB insert failed - clean up orphan cover file from storage
         if (coverPath != null) {
