@@ -29,13 +29,19 @@ final adminEbooksProvider = FutureProvider.family<List<Map<String, dynamic>>, St
 });
 
 class AdminEbooksScreen extends ConsumerStatefulWidget {
-  const AdminEbooksScreen({super.key});
+  /// When true, hides AdminScreenHeader (used inside hub tabs)
+  final bool embedded;
+
+  const AdminEbooksScreen({super.key, this.embedded = false});
 
   @override
   ConsumerState<AdminEbooksScreen> createState() => _AdminEbooksScreenState();
 }
 
-class _AdminEbooksScreenState extends ConsumerState<AdminEbooksScreen> with SingleTickerProviderStateMixin {
+class _AdminEbooksScreenState extends ConsumerState<AdminEbooksScreen>
+    with SingleTickerProviderStateMixin, AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => widget.embedded;
   late TabController _tabController;
   String _searchQuery = '';
 
@@ -209,13 +215,16 @@ class _AdminEbooksScreenState extends ConsumerState<AdminEbooksScreen> with Sing
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
+
     return Column(
       children: [
-        // Header
-        AdminScreenHeader(
-          title: 'مدیریت ایبوک‌ها',
-          icon: Icons.auto_stories_rounded,
-          actions: [
+        // Header (hidden when embedded in hub)
+        if (!widget.embedded)
+          AdminScreenHeader(
+            title: 'مدیریت ایبوک‌ها',
+            icon: Icons.auto_stories_rounded,
+            actions: [
             // Selection mode toggle
             if (_isSelectionMode) ...[
               Text('${_selectedIds.length} انتخاب شده', style: const TextStyle(color: AppColors.textSecondary)),

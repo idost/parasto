@@ -8,7 +8,9 @@ import 'package:myna/screens/admin/admin_shelf_form_screen.dart';
 import 'package:myna/screens/admin/admin_shelf_items_screen.dart';
 
 class AdminPromotionsScreen extends ConsumerWidget {
-  const AdminPromotionsScreen({super.key});
+  final bool embedded;
+
+  const AdminPromotionsScreen({super.key, this.embedded = false});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -18,7 +20,7 @@ class AdminPromotionsScreen extends ConsumerWidget {
         textDirection: TextDirection.rtl,
         child: Scaffold(
           backgroundColor: AppColors.background,
-          appBar: AppBar(
+          appBar: embedded ? null : AppBar(
             backgroundColor: AppColors.background,
             title: const Text('تبلیغات و پیشنهادات'),
             centerTitle: true,

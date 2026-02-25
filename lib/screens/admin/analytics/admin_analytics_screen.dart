@@ -10,7 +10,9 @@ import 'package:myna/screens/admin/analytics/tabs/users_tab.dart';
 
 /// Main analytics and reporting screen for admin dashboard
 class AdminAnalyticsScreen extends ConsumerStatefulWidget {
-  const AdminAnalyticsScreen({super.key});
+  final bool embedded;
+
+  const AdminAnalyticsScreen({super.key, this.embedded = false});
 
   @override
   ConsumerState<AdminAnalyticsScreen> createState() => _AdminAnalyticsScreenState();
@@ -38,7 +40,7 @@ class _AdminAnalyticsScreenState extends ConsumerState<AdminAnalyticsScreen>
       textDirection: TextDirection.rtl,
       child: Scaffold(
         backgroundColor: AppColors.background,
-        appBar: AppBar(
+        appBar: widget.embedded ? null : AppBar(
           backgroundColor: AppColors.surface,
           elevation: 0,
           title: Row(

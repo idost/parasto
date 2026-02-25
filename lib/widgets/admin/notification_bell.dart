@@ -26,7 +26,7 @@ class NotificationBell extends ConsumerWidget {
             if (showPanel) {
               _showNotificationPanel(context, ref);
             } else {
-              Navigator.of(context).pushNamed('/admin/notifications');
+              Navigator.of(context).pushNamed('/admin/engage/notifications');
             }
           },
           tooltip: 'اعلان‌ها',

@@ -22,7 +22,9 @@ import 'package:myna/screens/admin/admin_narrator_request_detail_screen.dart';
 /// - List of requests with user info
 /// - Navigate to detail screen for review
 class AdminNarratorRequestsScreen extends ConsumerStatefulWidget {
-  const AdminNarratorRequestsScreen({super.key});
+  final bool embedded;
+
+  const AdminNarratorRequestsScreen({super.key, this.embedded = false});
 
   @override
   ConsumerState<AdminNarratorRequestsScreen> createState() => _AdminNarratorRequestsScreenState();
@@ -43,10 +45,11 @@ class _AdminNarratorRequestsScreenState extends ConsumerState<AdminNarratorReque
         body: Column(
           children: [
             // Header
-            const AdminScreenHeader(
-              title: 'درخواست‌های گویندگی',
-              icon: Icons.person_add_rounded,
-            ),
+            if (!widget.embedded)
+              const AdminScreenHeader(
+                title: 'درخواست‌های گویندگی',
+                icon: Icons.person_add_rounded,
+              ),
 
             // Stats Bar
             statsAsync.when(

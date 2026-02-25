@@ -7,6 +7,7 @@ import 'package:myna/screens/admin/admin_reviews_screen.dart';
 import 'package:myna/screens/admin/admin_profile_screen.dart';
 import 'package:myna/screens/admin/admin_app_settings_screen.dart';
 import 'package:myna/screens/admin/admin_promotions_screen.dart';
+import 'package:myna/screens/admin/admin_import_export_screen.dart';
 import 'package:myna/widgets/admin/admin_screen_header.dart';
 
 class AdminSettingsScreen extends ConsumerWidget {
@@ -82,6 +83,12 @@ class AdminSettingsScreen extends ConsumerWidget {
             title: 'نظرات',
             subtitle: 'مشاهده و مدیریت نظرات',
             onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const AdminReviewsScreen())),
+          ),
+          _buildSettingTile(
+            icon: Icons.import_export,
+            title: 'ورود/خروج داده',
+            subtitle: 'وارد و خارج کردن اطلاعات',
+            onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const AdminImportExportScreen())),
           ),
           const SizedBox(height: 24),
 

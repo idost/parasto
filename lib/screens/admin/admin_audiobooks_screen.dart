@@ -31,16 +31,26 @@ final adminAudiobooksProvider = FutureProvider.family<List<Map<String, dynamic>>
 });
 
 class AdminAudiobooksScreen extends ConsumerStatefulWidget {
-  const AdminAudiobooksScreen({super.key});
+  /// When true, hides AdminScreenHeader and content type chips (used inside hub tabs)
+  final bool embedded;
+  /// Content type filter passed from hub. Overrides route-based detection.
+  /// Values: 'books', 'music', 'podcasts', 'articles', or null (all)
+  final String? contentTypeFilter;
+
+  const AdminAudiobooksScreen({super.key, this.embedded = false, this.contentTypeFilter});
 
   @override
   ConsumerState<AdminAudiobooksScreen> createState() => _AdminAudiobooksScreenState();
 }
 
-class _AdminAudiobooksScreenState extends ConsumerState<AdminAudiobooksScreen> with SingleTickerProviderStateMixin {
+class _AdminAudiobooksScreenState extends ConsumerState<AdminAudiobooksScreen>
+    with SingleTickerProviderStateMixin, AutomaticKeepAliveClientMixin {
   late TabController _tabController;
   String _searchQuery = '';
-  String? _contentTypeFilter; // null=all, 'books', 'music', 'podcasts'
+  String? _contentTypeFilter; // null=all, 'books', 'music', 'podcasts', 'articles'
+
+  @override
+  bool get wantKeepAlive => widget.embedded;
 
   // Bulk selection state
   bool _isSelectionMode = false;
@@ -54,6 +64,10 @@ class _AdminAudiobooksScreenState extends ConsumerState<AdminAudiobooksScreen> w
   void initState() {
     super.initState();
     _tabController = TabController(length: 5, vsync: this);
+    // Use constructor param if provided (hub mode), otherwise route detection in build()
+    if (widget.contentTypeFilter != null) {
+      _contentTypeFilter = widget.contentTypeFilter;
+    }
   }
 
   @override
@@ -312,61 +326,68 @@ class _AdminAudiobooksScreenState extends ConsumerState<AdminAudiobooksScreen> w
 
   @override
   Widget build(BuildContext context) {
-    final activeRoute = ref.watch(adminActiveRouteProvider);
-    final isMusic = activeRoute == '/admin/music';
-    final isPodcast = activeRoute == '/admin/podcasts';
-    final isApprovalQueue = activeRoute == '/admin/approval-queue';
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
 
-    // Set content type filter based on route
-    if (isMusic && _contentTypeFilter != 'music') {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        setState(() => _contentTypeFilter = 'music');
-      });
-    } else if (isPodcast && _contentTypeFilter != 'podcasts') {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        setState(() => _contentTypeFilter = 'podcasts');
-      });
-    } else if (!isMusic && !isPodcast && activeRoute == '/admin/books' && _contentTypeFilter != 'books') {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        setState(() => _contentTypeFilter = 'books');
-      });
-    } else if (activeRoute == '/admin/audiobooks' && _contentTypeFilter != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        setState(() => _contentTypeFilter = null);
-      });
-    }
+    // In embedded mode (hub tabs), use constructor param; skip route-based detection
+    final bool isEmbedded = widget.embedded;
+    final activeRoute = isEmbedded ? '' : ref.watch(adminActiveRouteProvider);
+    final isMusic = !isEmbedded && activeRoute == '/admin/content/music';
+    final isPodcast = !isEmbedded && activeRoute == '/admin/content/podcasts';
+    final isApprovalQueue = !isEmbedded && activeRoute == '/admin/content';
 
-    // For approval queue, default to pending tab
-    if (isApprovalQueue && _tabController.index != 0) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _tabController.animateTo(0);
-      });
+    // Set content type filter based on route (only when NOT embedded)
+    if (!isEmbedded) {
+      if (isMusic && _contentTypeFilter != 'music') {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          setState(() => _contentTypeFilter = 'music');
+        });
+      } else if (isPodcast && _contentTypeFilter != 'podcasts') {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          setState(() => _contentTypeFilter = 'podcasts');
+        });
+      } else if (!isMusic && !isPodcast && activeRoute == '/admin/content/books' && _contentTypeFilter != 'books') {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          setState(() => _contentTypeFilter = 'books');
+        });
+      } else if (activeRoute == '/admin/content' && _contentTypeFilter != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          setState(() => _contentTypeFilter = null);
+        });
+      }
+
+      // For approval queue, default to pending tab
+      if (isApprovalQueue && _tabController.index != 0) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _tabController.animateTo(0);
+        });
+      }
     }
 
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Column(
         children: [
-          // Header
-          AdminScreenHeader(
-            title: isApprovalQueue
-                ? 'صف تأیید محتوا'
-                : (isPodcast ? 'مدیریت پادکست‌ها' : (isMusic ? 'مدیریت موسیقی' : 'مدیریت کتاب‌ها')),
-            icon: isApprovalQueue
-                ? Icons.pending_actions_rounded
-                : (isPodcast ? Icons.podcasts_rounded : (isMusic ? Icons.library_music_rounded : Icons.menu_book_rounded)),
-            actions: [
-              // Selection mode toggle
-              IconButton(
-                onPressed: _toggleSelectionMode,
-                icon: Icon(
-                  _isSelectionMode ? Icons.close : Icons.checklist_rounded,
-                  color: _isSelectionMode ? AppColors.error : AppColors.textSecondary,
+          // Header (hidden when embedded in hub)
+          if (!isEmbedded)
+            AdminScreenHeader(
+              title: isApprovalQueue
+                  ? 'صف تأیید محتوا'
+                  : (isPodcast ? 'مدیریت پادکست‌ها' : (isMusic ? 'مدیریت موسیقی' : 'مدیریت کتاب‌ها')),
+              icon: isApprovalQueue
+                  ? Icons.pending_actions_rounded
+                  : (isPodcast ? Icons.podcasts_rounded : (isMusic ? Icons.library_music_rounded : Icons.menu_book_rounded)),
+              actions: [
+                // Selection mode toggle
+                IconButton(
+                  onPressed: _toggleSelectionMode,
+                  icon: Icon(
+                    _isSelectionMode ? Icons.close : Icons.checklist_rounded,
+                    color: _isSelectionMode ? AppColors.error : AppColors.textSecondary,
+                  ),
+                  tooltip: _isSelectionMode ? 'لغو انتخاب' : 'انتخاب چندتایی',
                 ),
-                tooltip: _isSelectionMode ? 'لغو انتخاب' : 'انتخاب چندتایی',
-              ),
-            ],
-          ),
+              ],
+            ),
 
           // Bulk action bar (when items selected)
           if (_isSelectionMode && _selectedIds.isNotEmpty)
@@ -396,8 +417,8 @@ class _AdminAudiobooksScreenState extends ConsumerState<AdminAudiobooksScreen> w
           Expanded(
             child: Column(
               children: [
-                // Content type filter (only show when not filtered by route)
-                if (activeRoute != '/admin/books' && activeRoute != '/admin/music' && activeRoute != '/admin/podcasts')
+                // Content type filter (hidden when embedded — hub tabs handle type selection)
+                if (!isEmbedded && activeRoute != '/admin/content/books' && activeRoute != '/admin/content/music' && activeRoute != '/admin/content/podcasts')
                   Padding(
                     padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
                     child: Row(
@@ -731,11 +752,13 @@ class _AudiobooksList extends ConsumerWidget {
         if (contentTypeFilter != null) {
           switch (contentTypeFilter) {
             case 'books':
-              filtered = filtered.where((book) => book['is_music'] != true && book['is_podcast'] != true).toList();
+              filtered = filtered.where((book) => book['is_music'] != true && book['is_podcast'] != true && book['is_article'] != true).toList();
             case 'music':
               filtered = filtered.where((book) => book['is_music'] == true).toList();
             case 'podcasts':
               filtered = filtered.where((book) => book['is_podcast'] == true).toList();
+            case 'articles':
+              filtered = filtered.where((book) => book['is_article'] == true).toList();
           }
         }
 

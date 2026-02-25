@@ -20,7 +20,9 @@ import 'package:myna/widgets/admin/error_state.dart';
 /// - Create new creators
 /// - Edit existing creators
 class AdminCreatorsScreen extends StatefulWidget {
-  const AdminCreatorsScreen({super.key});
+  final bool embedded;
+
+  const AdminCreatorsScreen({super.key, this.embedded = false});
 
   @override
   State<AdminCreatorsScreen> createState() => _AdminCreatorsScreenState();
@@ -210,7 +212,7 @@ class _AdminCreatorsScreenState extends State<AdminCreatorsScreen> {
       textDirection: TextDirection.rtl,
       child: Scaffold(
         backgroundColor: AppColors.background,
-        appBar: AppBar(
+        appBar: widget.embedded ? null : AppBar(
           backgroundColor: AppColors.background,
           elevation: 0,
           title: const Text(

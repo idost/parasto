@@ -83,35 +83,49 @@ final adminUsersProvider = FutureProvider.autoDispose<List<Map<String, dynamic>>
 });
 
 class AdminUsersScreen extends ConsumerStatefulWidget {
-  const AdminUsersScreen({super.key});
+  /// When true, hides AdminScreenHeader (used inside hub tabs)
+  final bool embedded;
+  /// Role filter passed from hub. Overrides route-based detection.
+  /// Values: 'listener', 'narrator', 'admin', or null (all)
+  final String? initialRole;
+
+  const AdminUsersScreen({super.key, this.embedded = false, this.initialRole});
 
   @override
   ConsumerState<AdminUsersScreen> createState() => _AdminUsersScreenState();
 }
 
-class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
+class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen>
+    with AutomaticKeepAliveClientMixin {
   String _searchQuery = '';
   String _filterRole = 'all';
   final _searchController = TextEditingController();
 
   @override
+  bool get wantKeepAlive => widget.embedded;
+
+  @override
   void initState() {
     super.initState();
-    // Set initial filter based on current route
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final activeRoute = ref.read(adminActiveRouteProvider);
-      setState(() {
-        if (activeRoute == '/admin/users/listeners') {
-          _filterRole = 'listener';
-        } else if (activeRoute == '/admin/users/narrators') {
-          _filterRole = 'narrator';
-        } else if (activeRoute == '/admin/users/admins') {
-          _filterRole = 'admin';
-        } else {
-          _filterRole = 'all';
-        }
+    // Use constructor param if provided (hub mode), otherwise route detection
+    if (widget.initialRole != null) {
+      _filterRole = widget.initialRole!;
+    } else {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final activeRoute = ref.read(adminActiveRouteProvider);
+        setState(() {
+          if (activeRoute == '/admin/people/listeners') {
+            _filterRole = 'listener';
+          } else if (activeRoute == '/admin/people/narrators') {
+            _filterRole = 'narrator';
+          } else if (activeRoute == '/admin/people/admins') {
+            _filterRole = 'admin';
+          } else {
+            _filterRole = 'all';
+          }
+        });
       });
-    });
+    }
   }
 
   @override
@@ -122,46 +136,43 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
+
     // Use server-side search provider with current query and role filter
     final searchParams = UserSearchParams(query: _searchQuery, role: _filterRole);
     final usersAsync = ref.watch(adminUsersSearchProvider(searchParams));
-    final activeRoute = ref.watch(adminActiveRouteProvider);
 
-    // Update filter when route changes
-    if (activeRoute == '/admin/users/listeners' && _filterRole != 'listener') {
-      Future.microtask(() => setState(() => _filterRole = 'listener'));
-    } else if (activeRoute == '/admin/users/narrators' && _filterRole != 'narrator') {
-      Future.microtask(() => setState(() => _filterRole = 'narrator'));
-    } else if (activeRoute == '/admin/users/admins' && _filterRole != 'admin') {
-      Future.microtask(() => setState(() => _filterRole = 'admin'));
-    } else if (activeRoute == '/admin/users' && _filterRole != 'all') {
-      Future.microtask(() => setState(() => _filterRole = 'all'));
-    }
+    // Route-based role sync (only when NOT embedded — hub passes initialRole instead)
+    if (!widget.embedded) {
+      final activeRoute = ref.watch(adminActiveRouteProvider);
 
-    // Determine title and icon based on route
-    String title = 'مدیریت کاربران';
-    IconData icon = Icons.people_rounded;
-
-    if (activeRoute == '/admin/users/listeners') {
-      title = 'شنوندگان';
-      icon = Icons.people_rounded;
-    } else if (activeRoute == '/admin/users/narrators') {
-      title = 'گویندگان';
-      icon = Icons.mic_rounded;
-    } else if (activeRoute == '/admin/users/admins') {
-      title = 'فهرست مدیران';
-      icon = Icons.admin_panel_settings_rounded;
+      if (activeRoute == '/admin/people/listeners' && _filterRole != 'listener') {
+        Future.microtask(() => setState(() => _filterRole = 'listener'));
+      } else if (activeRoute == '/admin/people/narrators' && _filterRole != 'narrator') {
+        Future.microtask(() => setState(() => _filterRole = 'narrator'));
+      } else if (activeRoute == '/admin/people/admins' && _filterRole != 'admin') {
+        Future.microtask(() => setState(() => _filterRole = 'admin'));
+      } else if (activeRoute == '/admin/people' && _filterRole != 'all') {
+        Future.microtask(() => setState(() => _filterRole = 'all'));
+      }
     }
 
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Column(
         children: [
-          // Header
-          AdminScreenHeader(
-            title: title,
-            icon: icon,
-          ),
+          // Header (hidden when embedded in hub)
+          if (!widget.embedded) ...[
+            AdminScreenHeader(
+              title: _filterRole == 'listener' ? 'شنوندگان'
+                  : _filterRole == 'narrator' ? 'گویندگان'
+                  : _filterRole == 'admin' ? 'فهرست مدیران'
+                  : 'مدیریت کاربران',
+              icon: _filterRole == 'narrator' ? Icons.mic_rounded
+                  : _filterRole == 'admin' ? Icons.admin_panel_settings_rounded
+                  : Icons.people_rounded,
+            ),
+          ],
           // Search and filter
           Padding(
             padding: const EdgeInsets.all(12),

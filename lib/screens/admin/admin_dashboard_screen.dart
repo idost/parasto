@@ -182,7 +182,7 @@ class AdminDashboardScreen extends ConsumerWidget {
                     ),
                   ),
                   onPressed: () {
-                    ref.read(adminActiveRouteProvider.notifier).state = '/admin/notifications';
+                    ref.read(adminActiveRouteProvider.notifier).state = '/admin/engage/notifications';
                   },
                   tooltip: 'اعلان‌ها',
                 ),
@@ -271,7 +271,7 @@ class AdminDashboardScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Compact Stats Bar (Single Row)
-                  _buildCompactStatsBar(context, stats),
+                  _buildCompactStatsBar(context, ref, stats),
                   const SizedBox(height: 20),
 
                   // Hero Section: Approval Queue
@@ -322,7 +322,7 @@ class AdminDashboardScreen extends ConsumerWidget {
   }
 
   /// Compact stats bar with 6 metrics - responsive grid
-  Widget _buildCompactStatsBar(BuildContext context, Map<String, dynamic> stats) {
+  Widget _buildCompactStatsBar(BuildContext context, WidgetRef ref, Map<String, dynamic> stats) {
     final screenWidth = MediaQuery.of(context).size.width;
 
     // Calculate number of columns based on screen width
@@ -356,7 +356,7 @@ class AdminDashboardScreen extends ConsumerWidget {
           value: FarsiUtils.toFarsiDigits((stats['pending_content'] as int?) ?? 0),
           label: 'در انتظار',
           color: AppColors.warning,
-          onTap: () => Navigator.pushNamed(context, '/admin/approval-queue'),
+          onTap: () => ref.read(adminActiveRouteProvider.notifier).state = '/admin/content',
         ),
         CompactStatCard(
           icon: Icons.people_rounded,
@@ -470,7 +470,7 @@ class AdminDashboardScreen extends ConsumerWidget {
             label: 'مدیریت کتاب‌ها',
             color: AppColors.primary,
             onTap: () {
-              ref.read(adminActiveRouteProvider.notifier).state = '/admin/books';
+              ref.read(adminActiveRouteProvider.notifier).state = '/admin/content/books';
             },
           ),
           _buildQuickActionButton(
@@ -479,7 +479,7 @@ class AdminDashboardScreen extends ConsumerWidget {
             label: 'مدیریت موسیقی',
             color: AppColors.secondary,
             onTap: () {
-              ref.read(adminActiveRouteProvider.notifier).state = '/admin/music';
+              ref.read(adminActiveRouteProvider.notifier).state = '/admin/content/music';
             },
           ),
           _buildQuickActionButton(
@@ -488,7 +488,7 @@ class AdminDashboardScreen extends ConsumerWidget {
             label: 'مدیریت پادکست‌ها',
             color: Colors.teal,
             onTap: () {
-              ref.read(adminActiveRouteProvider.notifier).state = '/admin/podcasts';
+              ref.read(adminActiveRouteProvider.notifier).state = '/admin/content/podcasts';
             },
           ),
           _buildQuickActionButton(
@@ -497,7 +497,7 @@ class AdminDashboardScreen extends ConsumerWidget {
             label: 'مدیریت کاربران',
             color: AppColors.info,
             onTap: () {
-              ref.read(adminActiveRouteProvider.notifier).state = '/admin/users';
+              ref.read(adminActiveRouteProvider.notifier).state = '/admin/people';
             },
           ),
           _buildQuickActionButton(
@@ -506,7 +506,7 @@ class AdminDashboardScreen extends ConsumerWidget {
             label: 'پشتیبانی',
             color: AppColors.secondary,
             onTap: () {
-              ref.read(adminActiveRouteProvider.notifier).state = '/admin/support';
+              ref.read(adminActiveRouteProvider.notifier).state = '/admin/insights/support';
             },
           ),
           const SizedBox(height: 8),

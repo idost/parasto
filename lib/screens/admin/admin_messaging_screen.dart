@@ -10,7 +10,9 @@ import 'package:myna/utils/farsi_utils.dart';
 
 /// Admin messaging hub screen
 class AdminMessagingScreen extends ConsumerStatefulWidget {
-  const AdminMessagingScreen({super.key});
+  final bool embedded;
+
+  const AdminMessagingScreen({super.key, this.embedded = false});
 
   @override
   ConsumerState<AdminMessagingScreen> createState() =>
@@ -41,25 +43,26 @@ class _AdminMessagingScreenState extends ConsumerState<AdminMessagingScreen>
         backgroundColor: AppColors.background,
         body: Column(
           children: [
-            AdminScreenHeader(
-              title: 'مرکز پیام‌ها',
-              icon: Icons.message_rounded,
-              actions: [
-                ElevatedButton.icon(
-                  onPressed: () => _showComposeDialog(context),
-                  icon: const Icon(Icons.edit_rounded, size: 18),
-                  label: const Text('پیام جدید'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 10,
+            if (!widget.embedded)
+              AdminScreenHeader(
+                title: 'مرکز پیام‌ها',
+                icon: Icons.message_rounded,
+                actions: [
+                  ElevatedButton.icon(
+                    onPressed: () => _showComposeDialog(context),
+                    icon: const Icon(Icons.edit_rounded, size: 18),
+                    label: const Text('پیام جدید'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
                     ),
                   ),
-                ),
-              ],
-            ),
+                ],
+              ),
             // Tabs
             Container(
               color: AppColors.surface,

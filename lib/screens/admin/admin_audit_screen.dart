@@ -13,7 +13,9 @@ import 'package:myna/widgets/admin/empty_state.dart';
 
 /// Admin screen for viewing audit logs and activity history
 class AdminAuditScreen extends ConsumerStatefulWidget {
-  const AdminAuditScreen({super.key});
+  final bool embedded;
+
+  const AdminAuditScreen({super.key, this.embedded = false});
 
   @override
   ConsumerState<AdminAuditScreen> createState() => _AdminAuditScreenState();
@@ -28,7 +30,7 @@ class _AdminAuditScreenState extends ConsumerState<AdminAuditScreen> {
       textDirection: TextDirection.rtl,
       child: Scaffold(
         backgroundColor: AppColors.background,
-        appBar: AppBar(
+        appBar: widget.embedded ? null : AppBar(
           backgroundColor: AppColors.surface,
           elevation: 0,
           title: Row(

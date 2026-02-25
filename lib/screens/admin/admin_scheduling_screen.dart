@@ -11,7 +11,9 @@ import 'package:myna/widgets/admin/loading_state.dart';
 
 /// Admin screen for content scheduling management
 class AdminSchedulingScreen extends ConsumerStatefulWidget {
-  const AdminSchedulingScreen({super.key});
+  final bool embedded;
+
+  const AdminSchedulingScreen({super.key, this.embedded = false});
 
   @override
   ConsumerState<AdminSchedulingScreen> createState() => _AdminSchedulingScreenState();
@@ -60,7 +62,7 @@ class _AdminSchedulingScreenState extends ConsumerState<AdminSchedulingScreen>
         backgroundColor: AppColors.background,
         body: Column(
           children: [
-            _buildHeader(),
+            if (!widget.embedded) _buildHeader(),
             _buildFilterChips(),
             _buildTabBar(),
             Expanded(

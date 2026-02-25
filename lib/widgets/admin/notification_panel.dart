@@ -173,7 +173,7 @@ class NotificationPanel extends ConsumerWidget {
                 child: OutlinedButton.icon(
                   onPressed: () {
                     Navigator.of(context).pop();
-                    Navigator.of(context).pushNamed('/admin/notifications');
+                    Navigator.of(context).pushNamed('/admin/engage/notifications');
                   },
                   icon: const Icon(Icons.list_rounded, size: 18),
                   label: const Text('مشاهده همه اعلان‌ها'),
@@ -397,7 +397,7 @@ class NotificationDropdownPanel extends ConsumerWidget {
               padding: const EdgeInsets.all(12),
               child: TextButton(
                 onPressed: () {
-                  Navigator.of(context).pushNamed('/admin/notifications');
+                  Navigator.of(context).pushNamed('/admin/engage/notifications');
                 },
                 style: TextButton.styleFrom(
                   foregroundColor: AppColors.primary,

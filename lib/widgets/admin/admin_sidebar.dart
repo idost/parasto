@@ -91,207 +91,66 @@ class AdminSidebar extends ConsumerWidget {
                     onTap: () => showGlobalSearch(context),
                   ),
 
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 8),
 
-                  // Content Section
-                  if (!isCollapsed) _buildSectionHeader('محتوا'),
+                  // Content Hub
                   SidebarNavItem(
-                    icon: Icons.menu_book_rounded,
-                    label: 'کتاب‌های صوتی',
-                    route: '/admin/books',
-                    isActive: activeRoute == '/admin/books',
-                    isCollapsed: isCollapsed,
-                    onTap: () => _navigate(context, ref, '/admin/books'),
-                  ),
-                  SidebarNavItem(
-                    icon: Icons.library_music_rounded,
-                    label: 'موسیقی',
-                    route: '/admin/music',
-                    isActive: activeRoute == '/admin/music',
-                    isCollapsed: isCollapsed,
-                    onTap: () => _navigate(context, ref, '/admin/music'),
-                  ),
-                  SidebarNavItem(
-                    icon: Icons.podcasts_rounded,
-                    label: 'پادکست‌ها',
-                    route: '/admin/podcasts',
-                    isActive: activeRoute == '/admin/podcasts',
-                    isCollapsed: isCollapsed,
-                    onTap: () => _navigate(context, ref, '/admin/podcasts'),
-                  ),
-                  SidebarNavItem(
-                    icon: Icons.pending_actions_rounded,
-                    label: 'صف تأیید',
-                    route: '/admin/approval-queue',
-                    isActive: activeRoute == '/admin/approval-queue',
+                    icon: Icons.library_books_rounded,
+                    label: 'محتوا',
+                    route: '/admin/content',
+                    isActive: activeRoute.startsWith('/admin/content'),
                     isCollapsed: isCollapsed,
                     badge: _getPendingCount(ref),
-                    onTap: () => _navigate(context, ref, '/admin/approval-queue'),
-                  ),
-                  SidebarNavItem(
-                    icon: Icons.workspace_premium_rounded,
-                    label: 'ویژه و تبلیغات',
-                    route: '/admin/promotions',
-                    isActive: activeRoute == '/admin/promotions',
-                    isCollapsed: isCollapsed,
-                    onTap: () => _navigate(context, ref, '/admin/promotions'),
-                  ),
-                  SidebarNavItem(
-                    icon: Icons.schedule_rounded,
-                    label: 'زمان‌بندی',
-                    route: '/admin/scheduling',
-                    isActive: activeRoute == '/admin/scheduling',
-                    isCollapsed: isCollapsed,
-                    onTap: () => _navigate(context, ref, '/admin/scheduling'),
+                    onTap: () => _navigate(context, ref, '/admin/content'),
                   ),
 
-                  const SizedBox(height: 16),
-
-                  // Users Section
-                  if (!isCollapsed) _buildSectionHeader('کاربران'),
+                  // People Hub
                   SidebarNavItem(
                     icon: Icons.people_rounded,
-                    label: 'شنوندگان',
-                    route: '/admin/users/listeners',
-                    isActive: activeRoute == '/admin/users/listeners',
-                    isCollapsed: isCollapsed,
-                    onTap: () => _navigate(context, ref, '/admin/users/listeners'),
-                  ),
-                  SidebarNavItem(
-                    icon: Icons.mic_rounded,
-                    label: 'گویندگان',
-                    route: '/admin/users/narrators',
-                    isActive: activeRoute == '/admin/users/narrators',
-                    isCollapsed: isCollapsed,
-                    onTap: () => _navigate(context, ref, '/admin/users/narrators'),
-                  ),
-                  SidebarNavItem(
-                    icon: Icons.edit_rounded,
-                    label: 'سازندگان',
-                    route: '/admin/users/creators',
-                    isActive: activeRoute == '/admin/users/creators',
-                    isCollapsed: isCollapsed,
-                    onTap: () => _navigate(context, ref, '/admin/users/creators'),
-                  ),
-                  SidebarNavItem(
-                    icon: Icons.person_add_rounded,
-                    label: 'درخواست‌های گوینده',
-                    route: '/admin/users/narrator-requests',
-                    isActive: activeRoute == '/admin/users/narrator-requests',
+                    label: 'افراد',
+                    route: '/admin/people',
+                    isActive: activeRoute.startsWith('/admin/people'),
                     isCollapsed: isCollapsed,
                     badge: _getNarratorRequestsCount(ref),
-                    onTap: () => _navigate(context, ref, '/admin/users/narrator-requests'),
+                    onTap: () => _navigate(context, ref, '/admin/people'),
                   ),
 
-                  const SizedBox(height: 16),
-
-                  // Admins Section
-                  if (!isCollapsed) _buildSectionHeader('مدیران'),
+                  // Engage Hub
                   SidebarNavItem(
-                    icon: Icons.admin_panel_settings_rounded,
-                    label: 'فهرست مدیران',
-                    route: '/admin/users/admins',
-                    isActive: activeRoute == '/admin/users/admins',
-                    isCollapsed: isCollapsed,
-                    onTap: () => _navigate(context, ref, '/admin/users/admins'),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // Support
-                  SidebarNavItem(
-                    icon: Icons.support_agent_rounded,
-                    label: 'پشتیبانی',
-                    route: '/admin/support',
-                    isActive: activeRoute == '/admin/support',
-                    isCollapsed: isCollapsed,
-                    badge: _getOpenTicketsCount(ref),
-                    onTap: () => _navigate(context, ref, '/admin/support'),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // Analytics
-                  SidebarNavItem(
-                    icon: Icons.analytics_rounded,
-                    label: 'آنالیتیکس',
-                    route: '/admin/analytics',
-                    isActive: activeRoute == '/admin/analytics',
-                    isCollapsed: isCollapsed,
-                    onTap: () => _navigate(context, ref, '/admin/analytics'),
-                  ),
-
-                  // Audit Trail
-                  SidebarNavItem(
-                    icon: Icons.history_rounded,
-                    label: 'گزارش فعالیت',
-                    route: '/admin/audit',
-                    isActive: activeRoute == '/admin/audit',
-                    isCollapsed: isCollapsed,
-                    onTap: () => _navigate(context, ref, '/admin/audit'),
-                  ),
-
-                  // Quality Tools
-                  SidebarNavItem(
-                    icon: Icons.verified_rounded,
-                    label: 'کنترل کیفیت',
-                    route: '/admin/quality',
-                    isActive: activeRoute == '/admin/quality',
-                    isCollapsed: isCollapsed,
-                    onTap: () => _navigate(context, ref, '/admin/quality'),
-                  ),
-
-                  // Import/Export
-                  SidebarNavItem(
-                    icon: Icons.import_export_rounded,
-                    label: 'ورود/خروج',
-                    route: '/admin/import-export',
-                    isActive: activeRoute == '/admin/import-export',
-                    isCollapsed: isCollapsed,
-                    onTap: () => _navigate(context, ref, '/admin/import-export'),
-                  ),
-
-                  // Notifications
-                  SidebarNavItem(
-                    icon: Icons.notifications_rounded,
-                    label: 'اعلان‌ها',
-                    route: '/admin/notifications',
-                    isActive: activeRoute == '/admin/notifications',
+                    icon: Icons.campaign_rounded,
+                    label: 'تعامل',
+                    route: '/admin/engage',
+                    isActive: activeRoute.startsWith('/admin/engage'),
                     isCollapsed: isCollapsed,
                     badge: _getUnreadNotificationsCount(ref),
-                    onTap: () => _navigate(context, ref, '/admin/notifications'),
+                    onTap: () => _navigate(context, ref, '/admin/engage'),
                   ),
 
-                  // Messaging
+                  // Insights Hub
                   SidebarNavItem(
-                    icon: Icons.message_rounded,
-                    label: 'پیام‌ها',
-                    route: '/admin/messaging',
-                    isActive: activeRoute == '/admin/messaging',
+                    icon: Icons.insights_rounded,
+                    label: 'بینش‌ها',
+                    route: '/admin/insights',
+                    isActive: activeRoute.startsWith('/admin/insights'),
                     isCollapsed: isCollapsed,
-                    onTap: () => _navigate(context, ref, '/admin/messaging'),
+                    badge: _getOpenTicketsCount(ref),
+                    onTap: () => _navigate(context, ref, '/admin/insights'),
                   ),
 
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 8),
 
-                  // Settings Section
-                  if (!isCollapsed) _buildSectionHeader('تنظیمات'),
+                  // Settings
                   SidebarNavItem(
-                    icon: Icons.category_rounded,
-                    label: 'دسته‌بندی‌ها',
-                    route: '/admin/settings/categories',
-                    isActive: activeRoute == '/admin/settings/categories',
+                    icon: Icons.settings_rounded,
+                    label: 'تنظیمات',
+                    route: '/admin/settings',
+                    isActive: activeRoute.startsWith('/admin/settings') &&
+                        !activeRoute.startsWith('/admin/settings/profile'),
                     isCollapsed: isCollapsed,
-                    onTap: () => _navigate(context, ref, '/admin/settings/categories'),
+                    onTap: () => _navigate(context, ref, '/admin/settings'),
                   ),
-                  SidebarNavItem(
-                    icon: Icons.settings_applications_rounded,
-                    label: 'تنظیمات اپ',
-                    route: '/admin/settings/app',
-                    isActive: activeRoute == '/admin/settings/app',
-                    isCollapsed: isCollapsed,
-                    onTap: () => _navigate(context, ref, '/admin/settings/app'),
-                  ),
+
+                  // Profile
                   SidebarNavItem(
                     icon: Icons.account_circle_rounded,
                     label: 'پروفایل',
@@ -356,27 +215,6 @@ class AdminSidebar extends ConsumerWidget {
               ref.read(sidebarCollapsedProvider.notifier).state = !isCollapsed;
             },
             tooltip: isCollapsed ? 'باز کردن منو' : 'بستن منو',
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSectionHeader(String title) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              title,
-              style: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textTertiary,
-                letterSpacing: 0.5,
-              ),
-            ),
           ),
         ],
       ),
@@ -532,205 +370,66 @@ class AdminSidebarDrawer extends ConsumerWidget {
                       },
                     ),
 
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 8),
 
-                    // Content Section
-                    _buildSectionHeader('محتوا'),
+                    // Content Hub
                     SidebarNavItem(
-                      icon: Icons.menu_book_rounded,
-                      label: 'کتاب‌های صوتی',
-                      route: '/admin/books',
-                      isActive: activeRoute == '/admin/books',
+                      icon: Icons.library_books_rounded,
+                      label: 'محتوا',
+                      route: '/admin/content',
+                      isActive: activeRoute.startsWith('/admin/content'),
                       isCollapsed: false,
-                      onTap: () => _navigate(context, ref, '/admin/books'),
-                    ),
-                    SidebarNavItem(
-                      icon: Icons.library_music_rounded,
-                      label: 'موسیقی',
-                      route: '/admin/music',
-                      isActive: activeRoute == '/admin/music',
-                      isCollapsed: false,
-                      onTap: () => _navigate(context, ref, '/admin/music'),
-                    ),
-                    SidebarNavItem(
-                      icon: Icons.podcasts_rounded,
-                      label: 'پادکست‌ها',
-                      route: '/admin/podcasts',
-                      isActive: activeRoute == '/admin/podcasts',
-                      isCollapsed: false,
-                      onTap: () => _navigate(context, ref, '/admin/podcasts'),
-                    ),
-                    SidebarNavItem(
-                      icon: Icons.pending_actions_rounded,
-                      label: 'صف تأیید',
-                      route: '/admin/approval-queue',
-                      isActive: activeRoute == '/admin/approval-queue',
-                      isCollapsed: false,
-                      onTap: () => _navigate(context, ref, '/admin/approval-queue'),
-                    ),
-                    SidebarNavItem(
-                      icon: Icons.workspace_premium_rounded,
-                      label: 'ویژه و تبلیغات',
-                      route: '/admin/promotions',
-                      isActive: activeRoute == '/admin/promotions',
-                      isCollapsed: false,
-                      onTap: () => _navigate(context, ref, '/admin/promotions'),
-                    ),
-                    SidebarNavItem(
-                      icon: Icons.schedule_rounded,
-                      label: 'زمان‌بندی',
-                      route: '/admin/scheduling',
-                      isActive: activeRoute == '/admin/scheduling',
-                      isCollapsed: false,
-                      onTap: () => _navigate(context, ref, '/admin/scheduling'),
+                      badge: _getPendingCount(ref),
+                      onTap: () => _navigate(context, ref, '/admin/content'),
                     ),
 
-                    const SizedBox(height: 16),
-
-                    // Users Section
-                    _buildSectionHeader('کاربران'),
+                    // People Hub
                     SidebarNavItem(
                       icon: Icons.people_rounded,
-                      label: 'شنوندگان',
-                      route: '/admin/users/listeners',
-                      isActive: activeRoute == '/admin/users/listeners',
-                      isCollapsed: false,
-                      onTap: () => _navigate(context, ref, '/admin/users/listeners'),
-                    ),
-                    SidebarNavItem(
-                      icon: Icons.mic_rounded,
-                      label: 'گویندگان',
-                      route: '/admin/users/narrators',
-                      isActive: activeRoute == '/admin/users/narrators',
-                      isCollapsed: false,
-                      onTap: () => _navigate(context, ref, '/admin/users/narrators'),
-                    ),
-                    SidebarNavItem(
-                      icon: Icons.edit_rounded,
-                      label: 'سازندگان',
-                      route: '/admin/users/creators',
-                      isActive: activeRoute == '/admin/users/creators',
-                      isCollapsed: false,
-                      onTap: () => _navigate(context, ref, '/admin/users/creators'),
-                    ),
-                    SidebarNavItem(
-                      icon: Icons.person_add_rounded,
-                      label: 'درخواست‌های گوینده',
-                      route: '/admin/users/narrator-requests',
-                      isActive: activeRoute == '/admin/users/narrator-requests',
+                      label: 'افراد',
+                      route: '/admin/people',
+                      isActive: activeRoute.startsWith('/admin/people'),
                       isCollapsed: false,
                       badge: _getNarratorRequestsCount(ref),
-                      onTap: () => _navigate(context, ref, '/admin/users/narrator-requests'),
+                      onTap: () => _navigate(context, ref, '/admin/people'),
                     ),
 
-                    const SizedBox(height: 16),
-
-                    // Admins Section
-                    _buildSectionHeader('مدیران'),
+                    // Engage Hub
                     SidebarNavItem(
-                      icon: Icons.admin_panel_settings_rounded,
-                      label: 'فهرست مدیران',
-                      route: '/admin/users/admins',
-                      isActive: activeRoute == '/admin/users/admins',
-                      isCollapsed: false,
-                      onTap: () => _navigate(context, ref, '/admin/users/admins'),
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // Support
-                    SidebarNavItem(
-                      icon: Icons.support_agent_rounded,
-                      label: 'پشتیبانی',
-                      route: '/admin/support',
-                      isActive: activeRoute == '/admin/support',
-                      isCollapsed: false,
-                      onTap: () => _navigate(context, ref, '/admin/support'),
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // Analytics
-                    SidebarNavItem(
-                      icon: Icons.analytics_rounded,
-                      label: 'آنالیتیکس',
-                      route: '/admin/analytics',
-                      isActive: activeRoute == '/admin/analytics',
-                      isCollapsed: false,
-                      onTap: () => _navigate(context, ref, '/admin/analytics'),
-                    ),
-
-                    // Audit Trail
-                    SidebarNavItem(
-                      icon: Icons.history_rounded,
-                      label: 'گزارش فعالیت',
-                      route: '/admin/audit',
-                      isActive: activeRoute == '/admin/audit',
-                      isCollapsed: false,
-                      onTap: () => _navigate(context, ref, '/admin/audit'),
-                    ),
-
-                    // Quality Tools
-                    SidebarNavItem(
-                      icon: Icons.verified_rounded,
-                      label: 'کنترل کیفیت',
-                      route: '/admin/quality',
-                      isActive: activeRoute == '/admin/quality',
-                      isCollapsed: false,
-                      onTap: () => _navigate(context, ref, '/admin/quality'),
-                    ),
-
-                    // Import/Export
-                    SidebarNavItem(
-                      icon: Icons.import_export_rounded,
-                      label: 'ورود/خروج',
-                      route: '/admin/import-export',
-                      isActive: activeRoute == '/admin/import-export',
-                      isCollapsed: false,
-                      onTap: () => _navigate(context, ref, '/admin/import-export'),
-                    ),
-
-                    // Notifications
-                    SidebarNavItem(
-                      icon: Icons.notifications_rounded,
-                      label: 'اعلان‌ها',
-                      route: '/admin/notifications',
-                      isActive: activeRoute == '/admin/notifications',
+                      icon: Icons.campaign_rounded,
+                      label: 'تعامل',
+                      route: '/admin/engage',
+                      isActive: activeRoute.startsWith('/admin/engage'),
                       isCollapsed: false,
                       badge: _getUnreadNotificationsCount(ref),
-                      onTap: () => _navigate(context, ref, '/admin/notifications'),
+                      onTap: () => _navigate(context, ref, '/admin/engage'),
                     ),
 
-                    // Messaging
+                    // Insights Hub
                     SidebarNavItem(
-                      icon: Icons.message_rounded,
-                      label: 'پیام‌ها',
-                      route: '/admin/messaging',
-                      isActive: activeRoute == '/admin/messaging',
+                      icon: Icons.insights_rounded,
+                      label: 'بینش‌ها',
+                      route: '/admin/insights',
+                      isActive: activeRoute.startsWith('/admin/insights'),
                       isCollapsed: false,
-                      onTap: () => _navigate(context, ref, '/admin/messaging'),
+                      badge: _getOpenTicketsCount(ref),
+                      onTap: () => _navigate(context, ref, '/admin/insights'),
                     ),
 
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 8),
 
-                    // Settings Section
-                    _buildSectionHeader('تنظیمات'),
+                    // Settings
                     SidebarNavItem(
-                      icon: Icons.category_rounded,
-                      label: 'دسته‌بندی‌ها',
-                      route: '/admin/settings/categories',
-                      isActive: activeRoute == '/admin/settings/categories',
+                      icon: Icons.settings_rounded,
+                      label: 'تنظیمات',
+                      route: '/admin/settings',
+                      isActive: activeRoute.startsWith('/admin/settings') &&
+                          !activeRoute.startsWith('/admin/settings/profile'),
                       isCollapsed: false,
-                      onTap: () => _navigate(context, ref, '/admin/settings/categories'),
+                      onTap: () => _navigate(context, ref, '/admin/settings'),
                     ),
-                    SidebarNavItem(
-                      icon: Icons.settings_applications_rounded,
-                      label: 'تنظیمات اپ',
-                      route: '/admin/settings/app',
-                      isActive: activeRoute == '/admin/settings/app',
-                      isCollapsed: false,
-                      onTap: () => _navigate(context, ref, '/admin/settings/app'),
-                    ),
+
+                    // Profile
                     SidebarNavItem(
                       icon: Icons.account_circle_rounded,
                       label: 'پروفایل',
@@ -805,28 +504,16 @@ class AdminSidebarDrawer extends ConsumerWidget {
     }
   }
 
-  Widget _buildSectionHeader(String title) => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-    child: Row(
-      children: [
-        Expanded(
-          child: Text(
-            title,
-            style: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textTertiary,
-              letterSpacing: 0.5,
-            ),
-          ),
-        ),
-      ],
-    ),
-  );
-
   void _navigate(BuildContext context, WidgetRef ref, String route) {
     ref.read(adminActiveRouteProvider.notifier).state = route;
     Navigator.of(context).pop(); // Close drawer after navigation
+  }
+
+  int? _getPendingCount(WidgetRef ref) {
+    final pendingAsync = ref.watch(pendingContentProvider);
+    return pendingAsync.whenOrNull(
+      data: (items) => items.isNotEmpty ? items.length : null,
+    );
   }
 
   int? _getNarratorRequestsCount(WidgetRef ref) {
@@ -837,5 +524,12 @@ class AdminSidebarDrawer extends ConsumerWidget {
   int? _getUnreadNotificationsCount(WidgetRef ref) {
     final countAsync = ref.watch(unreadNotificationCountProvider);
     return countAsync.whenOrNull(data: (count) => count > 0 ? count : null);
+  }
+
+  int? _getOpenTicketsCount(WidgetRef ref) {
+    final ticketsAsync = ref.watch(adminOpenTicketsCountProvider);
+    return ticketsAsync.whenOrNull(
+      data: (count) => count > 0 ? count : null,
+    );
   }
 }

@@ -155,7 +155,7 @@ class ApprovalQueueWidget extends ConsumerWidget {
                 ),
                 TextButton.icon(
                   onPressed: () {
-                    Navigator.pushNamed(context, '/admin/approval-queue');
+                    Navigator.pushNamed(context, '/admin/content');
                   },
                   icon: const Icon(Icons.arrow_back, size: 14),
                   label: const Text('مشاهده همه'),

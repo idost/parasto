@@ -14,7 +14,9 @@ import 'package:myna/widgets/admin/error_state.dart';
 import 'package:myna/utils/farsi_utils.dart';
 
 class AdminSupportScreen extends ConsumerStatefulWidget {
-  const AdminSupportScreen({super.key});
+  final bool embedded;
+
+  const AdminSupportScreen({super.key, this.embedded = false});
 
   @override
   ConsumerState<AdminSupportScreen> createState() => _AdminSupportScreenState();
@@ -35,10 +37,11 @@ class _AdminSupportScreenState extends ConsumerState<AdminSupportScreen> {
         body: Column(
           children: [
             // Header
-            const AdminScreenHeader(
-              title: 'پشتیبانی',
-              icon: Icons.support_agent_rounded,
-            ),
+            if (!widget.embedded)
+              const AdminScreenHeader(
+                title: 'پشتیبانی',
+                icon: Icons.support_agent_rounded,
+              ),
             // Stats Bar with modern CompactStatCard
             statsAsync.when(
               loading: () => const SizedBox.shrink(),

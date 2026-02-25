@@ -145,27 +145,27 @@ class AdminNotification {
         if (audiobookId != null) {
           return '/admin/audiobooks/$audiobookId';
         }
-        return '/admin/approval-queue';
+        return '/admin/content';
       case NotificationType.narratorRequest:
         final requestId = data['request_id'];
         if (requestId != null) {
-          return '/admin/users/narrator-requests/$requestId';
+          return '/admin/people/narrators/$requestId';
         }
-        return '/admin/users/narrator-requests';
+        return '/admin/people/narrators';
       case NotificationType.supportTicket:
         final ticketId = data['ticket_id'];
         if (ticketId != null) {
-          return '/admin/support/$ticketId';
+          return '/admin/insights/support/$ticketId';
         }
-        return '/admin/support';
+        return '/admin/insights/support';
       case NotificationType.newUserSignup:
         final userId = data['user_id'];
         if (userId != null) {
-          return '/admin/users/$userId';
+          return '/admin/people/$userId';
         }
-        return '/admin/users/listeners';
+        return '/admin/people/listeners';
       case NotificationType.purchaseCompleted:
-        return '/admin/analytics';
+        return '/admin/insights';
       case NotificationType.reviewPosted:
         return '/admin/reviews';
       case NotificationType.contentApproved:
@@ -174,7 +174,7 @@ class AdminNotification {
         if (audiobookId != null) {
           return '/admin/audiobooks/$audiobookId';
         }
-        return '/admin/books';
+        return '/admin/content/books';
       case NotificationType.systemAlert:
         return null;
     }

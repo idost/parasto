@@ -11,7 +11,9 @@ import 'package:myna/widgets/admin/loading_state.dart';
 
 /// Admin screen for content quality management
 class AdminQualityScreen extends ConsumerStatefulWidget {
-  const AdminQualityScreen({super.key});
+  final bool embedded;
+
+  const AdminQualityScreen({super.key, this.embedded = false});
 
   @override
   ConsumerState<AdminQualityScreen> createState() => _AdminQualityScreenState();
@@ -56,7 +58,7 @@ class _AdminQualityScreenState extends ConsumerState<AdminQualityScreen>
         backgroundColor: AppColors.background,
         body: Column(
           children: [
-            _buildHeader(),
+            if (!widget.embedded) _buildHeader(),
             _buildStatsCards(),
             _buildTabBar(),
             Expanded(

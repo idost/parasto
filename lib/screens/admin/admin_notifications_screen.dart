@@ -11,7 +11,9 @@ import 'package:myna/widgets/admin/error_state.dart';
 
 /// Full notifications list screen for admin dashboard
 class AdminNotificationsScreen extends ConsumerStatefulWidget {
-  const AdminNotificationsScreen({super.key});
+  final bool embedded;
+
+  const AdminNotificationsScreen({super.key, this.embedded = false});
 
   @override
   ConsumerState<AdminNotificationsScreen> createState() =>
@@ -30,7 +32,7 @@ class _AdminNotificationsScreenState
       textDirection: TextDirection.rtl,
       child: Scaffold(
         backgroundColor: AppColors.background,
-        appBar: AppBar(
+        appBar: widget.embedded ? null : AppBar(
           backgroundColor: AppColors.surface,
           elevation: 0,
           title: Row(
