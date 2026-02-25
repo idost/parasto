@@ -6,7 +6,8 @@ import 'package:myna/widgets/admin/admin_screen_header.dart';
 import 'package:myna/widgets/admin/status_badge.dart';
 import 'package:myna/widgets/ebook_cover_image.dart';
 import 'package:myna/widgets/content_type_badge.dart';
-import 'package:myna/screens/admin/admin_upload_ebook_screen.dart';
+import 'package:myna/screens/admin/admin_upload_audiobook_screen.dart';
+import 'package:myna/screens/admin/admin_edit_audiobook_screen.dart';
 import 'package:myna/utils/farsi_utils.dart';
 
 /// Provider for all admin ebooks (no pagination - admins need to see everything)
@@ -269,7 +270,7 @@ class _AdminEbooksScreenState extends ConsumerState<AdminEbooksScreen>
               ),
               onPressed: () {
                 Navigator.of(context).push(
-                  MaterialPageRoute<void>(builder: (_) => const AdminUploadEbookScreen()),
+                  MaterialPageRoute<void>(builder: (_) => const AdminUploadAudiobookScreen(initialContentType: 'ebook')),
                 );
               },
             ),
@@ -395,7 +396,7 @@ class _AdminEbooksScreenState extends ConsumerState<AdminEbooksScreen>
                     label: const Text('افزودن ایبوک'),
                     onPressed: () {
                       Navigator.of(context).push(
-                        MaterialPageRoute<void>(builder: (_) => const AdminUploadEbookScreen()),
+                        MaterialPageRoute<void>(builder: (_) => const AdminUploadAudiobookScreen(initialContentType: 'ebook')),
                       );
                     },
                   ),
@@ -664,13 +665,57 @@ class _AdminEbooksScreenState extends ConsumerState<AdminEbooksScreen>
     return '${FarsiUtils.toFarsiDigits(date.year)}/${FarsiUtils.toFarsiDigits(date.month.toString().padLeft(2, '0'))}/${FarsiUtils.toFarsiDigits(date.day.toString().padLeft(2, '0'))}';
   }
 
+  /// Looks up the corresponding audiobook row for an ebook (bridge until Phase 5
+  /// migrates ebook reads to the audiobooks table).
+  Future<void> _navigateToEditEbook(Map<String, dynamic> ebook) async {
+    final titleFa = ebook['title_fa'] as String?;
+    if (titleFa == null || titleFa.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('عنوان ایبوک یافت نشد')),
+        );
+      }
+      return;
+    }
+
+    try {
+      final result = await Supabase.instance.client
+          .from('audiobooks')
+          .select()
+          .eq('content_type', 'ebook')
+          .eq('title_fa', titleFa)
+          .maybeSingle();
+
+      if (!mounted) return;
+
+      if (result != null) {
+        final didUpdate = await Navigator.of(context).push<bool>(
+          MaterialPageRoute<bool>(
+            builder: (_) => AdminEditAudiobookScreen(
+              audiobook: result,
+              onUpdate: () => ref.invalidate(adminEbooksProvider),
+            ),
+          ),
+        );
+        if (didUpdate == true) {
+          ref.invalidate(adminEbooksProvider);
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('ایبوک در جدول محتوا یافت نشد')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('خطا در بارگذاری: $e')),
+        );
+      }
+    }
+  }
+
   void _showEbookDetails(Map<String, dynamic> ebook) {
-    // Navigate to edit screen
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => AdminUploadEbookScreen(ebook: ebook),
-      ),
-    );
+    _navigateToEditEbook(ebook);
   }
 
   Future<void> _handleAction(String action, Map<String, dynamic> ebook) async {
@@ -679,11 +724,7 @@ class _AdminEbooksScreenState extends ConsumerState<AdminEbooksScreen>
     switch (action) {
       case 'view':
       case 'edit':
-        Navigator.of(context).push(
-          MaterialPageRoute<void>(
-            builder: (_) => AdminUploadEbookScreen(ebook: ebook),
-          ),
-        );
+        await _navigateToEditEbook(ebook);
         break;
 
       case 'approve':

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:myna/theme/app_theme.dart';
 import 'package:myna/config/env.dart';
 import 'package:myna/utils/app_logger.dart';
@@ -37,7 +38,10 @@ final musicCategoriesProvider = FutureProvider<List<Map<String, dynamic>>>((ref)
 });
 
 class AdminUploadAudiobookScreen extends ConsumerStatefulWidget {
-  const AdminUploadAudiobookScreen({super.key});
+  /// Pre-select content type when opening the form (e.g., 'ebook' from ebooks tab)
+  final String? initialContentType;
+
+  const AdminUploadAudiobookScreen({super.key, this.initialContentType});
 
   @override
   ConsumerState<AdminUploadAudiobookScreen> createState() => _AdminUploadAudiobookScreenState();
@@ -99,17 +103,60 @@ class _AdminUploadAudiobookScreenState extends ConsumerState<AdminUploadAudioboo
   bool _isMusic = false; // Content type: false = audiobook, true = music
   bool _isPodcast = false; // Content type: true = podcast
   bool _isArticle = false; // Content type: true = article (narrated article)
+  bool _isEbook = false; // Content type: true = ebook
   bool _isParastoBrand = true; // Default to Parasto brand (narrator optional)
   bool _isLoading = false;
+  bool _isUploading = false; // For ebook EPUB upload progress
+  String? _uploadProgress; // Upload progress message
   String? _error;
 
   // Cover image
   Uint8List? _coverImageBytes;
   String? _coverFileName;
 
+  // Ebook-specific fields
+  Uint8List? _epubBytes;
+  String? _epubFileName;
+  final _subtitleFaController = TextEditingController();
+  final _pageCountController = TextEditingController();
+  // Note: _publicationYearController already exists in book metadata section
+
   // Expansion panel states (for collapsible sections)
   bool _bookMetadataExpanded = false;
   bool _musicMetadataExpanded = false;
+
+  /// Computed content type string from boolean state flags
+  String get _contentType {
+    if (_isMusic) return 'music';
+    if (_isPodcast) return 'podcast';
+    if (_isArticle) return 'article';
+    if (_isEbook) return 'ebook';
+    return 'audiobook';
+  }
+
+  /// Whether the selected type is an audio format (has chapters/tracks)
+  bool get _isAudioType => !_isEbook;
+
+  @override
+  void initState() {
+    super.initState();
+    // Apply initial content type if provided
+    final initial = widget.initialContentType;
+    if (initial != null) {
+      switch (initial) {
+        case 'music':
+          _isMusic = true;
+        case 'podcast':
+          _isPodcast = true;
+        case 'article':
+          _isArticle = true;
+        case 'ebook':
+          _isEbook = true;
+        default:
+          break; // 'audiobook' or anything else = default state
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -154,6 +201,10 @@ class _AdminUploadAudiobookScreenState extends ConsumerState<AdminUploadAudioboo
     _genreEnController.dispose();
     _releaseYearController.dispose();
 
+    // Ebook controllers
+    _subtitleFaController.dispose();
+    _pageCountController.dispose();
+
     super.dispose();
   }
 
@@ -179,6 +230,25 @@ class _AdminUploadAudiobookScreenState extends ConsumerState<AdminUploadAudioboo
     }
   }
 
+  Future<void> _pickEpub() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['epub'],
+        withData: true,
+      );
+
+      if (result != null && result.files.single.bytes != null) {
+        setState(() {
+          _epubBytes = result.files.single.bytes!;
+          _epubFileName = result.files.single.name;
+        });
+      }
+    } catch (e) {
+      setState(() => _error = 'خطا در انتخاب فایل EPUB: $e');
+    }
+  }
+
   Future<String?> _uploadCoverImage() async {
     if (_coverImageBytes == null || _coverFileName == null) return null;
 
@@ -200,15 +270,15 @@ class _AdminUploadAudiobookScreenState extends ConsumerState<AdminUploadAudioboo
       return publicUrl;
     } catch (e) {
       AppLogger.e('Cover upload error', error: e);
-      throw Exception(_isMusic ? 'خطا در آپلود کاور' : 'خطا در آپلود تصویر جلد');
+      throw Exception('خطا در آپلود تصویر جلد');
     }
   }
 
   Future<void> _submitBook() async {
     if (!_formKey.currentState!.validate()) return;
 
-    // For audiobooks, category is required. For music, at least one music category is required.
-    if (!_isMusic && _selectedCategoryId == null) {
+    // Content-type-specific validation
+    if (!_isMusic && !_isEbook && _selectedCategoryId == null) {
       setState(() => _error = 'لطفاً دسته‌بندی را انتخاب کنید');
       return;
     }
@@ -218,12 +288,15 @@ class _AdminUploadAudiobookScreenState extends ConsumerState<AdminUploadAudioboo
       return;
     }
 
-    // Narrator selection is completely optional
-    // Admin can either:
-    // 1. Select a narrator account from dropdown (_selectedNarratorId)
-    // 2. Write any narrator name in the text field (_narratorNameController)
-    // 3. Enable Parasto brand to show "پرستو" instead of narrator name
-    // All options are independent and optional
+    if (_isEbook && _selectedCategoryId == null) {
+      setState(() => _error = 'لطفاً دسته‌بندی را انتخاب کنید');
+      return;
+    }
+
+    if (_isEbook && _epubBytes == null) {
+      setState(() => _error = 'لطفاً فایل EPUB را انتخاب کنید');
+      return;
+    }
 
     if (_coverImageBytes == null) {
       setState(() => _error = _isMusic ? 'لطفاً کاور را انتخاب کنید' : 'لطفاً تصویر جلد را انتخاب کنید');
@@ -232,26 +305,55 @@ class _AdminUploadAudiobookScreenState extends ConsumerState<AdminUploadAudioboo
 
     setState(() {
       _isLoading = true;
+      _isUploading = _isEbook; // Show upload progress for ebooks (EPUB upload can be slow)
       _error = null;
     });
 
     try {
+      final supabase = Supabase.instance.client;
+
       // 1. Upload cover image
-      final coverUrl = await _uploadCoverImage();
+      String? coverUrl;
+
+      if (_isEbook) {
+        // Ebook covers go to ebook-files bucket (matching existing ebook rows)
+        setState(() => _uploadProgress = 'آپلود تصویر جلد...');
+        coverUrl = await _uploadEbookCover();
+      } else {
+        coverUrl = await _uploadCoverImage();
+      }
 
       if (coverUrl == null) {
         throw Exception(_isMusic ? 'خطا در آپلود کاور' : 'خطا در آپلود تصویر جلد');
       }
 
-      // 2. Create audiobook record - with orphan file cleanup on failure
+      // 2. Upload EPUB file (ebooks only)
+      String? epubStoragePath;
+      if (_isEbook && _epubBytes != null) {
+        setState(() => _uploadProgress = 'آپلود فایل EPUB...');
+        final userId = supabase.auth.currentUser?.id ?? 'admin';
+        final epubUniqueId = '${DateTime.now().millisecondsSinceEpoch}_${userId.hashCode}';
+        final epubPath = 'epubs/$epubUniqueId.epub';
+
+        await supabase.storage.from('ebook-files').uploadBinary(
+          epubPath,
+          _epubBytes!,
+          fileOptions: const FileOptions(contentType: 'application/epub+zip'),
+        );
+
+        epubStoragePath = epubPath;
+        AppLogger.i('EPUB uploaded to: $epubPath (${(_epubBytes!.length / 1024 / 1024).toStringAsFixed(1)} MB)');
+      }
+
+      setState(() => _uploadProgress = 'ذخیره اطلاعات...');
+
+      // 3. Create audiobook record - with orphan file cleanup on failure
       final price = _isFree ? 0 : int.tryParse(_priceController.text) ?? 0;
 
-      // Get current admin's user ID to use as narrator_id if no narrator selected
-      final adminId = Supabase.instance.client.auth.currentUser?.id;
+      // Get current admin's user ID
+      final adminId = supabase.auth.currentUser?.id;
 
       // For legacy compatibility, map new metadata fields to old author/translator columns
-      // Books: use author_name, translator
-      // Music: use artist_name
       final legacyAuthorFa = _isMusic
           ? _artistNameController.text.trim()
           : _authorNameController.text.trim();
@@ -267,19 +369,21 @@ class _AdminUploadAudiobookScreenState extends ConsumerState<AdminUploadAudioboo
 
       // Extract cover path from URL for potential cleanup
       String? coverPath;
-      try {
-        final uri = Uri.parse(coverUrl);
-        final pathSegments = uri.pathSegments;
-        final bucketIndex = pathSegments.indexOf('audiobook-covers');
-        if (bucketIndex != -1 && bucketIndex < pathSegments.length - 1) {
-          coverPath = pathSegments.sublist(bucketIndex + 1).join('/');
-        }
-      } catch (_) {}
+      if (!_isEbook) {
+        try {
+          final uri = Uri.parse(coverUrl);
+          final pathSegments = uri.pathSegments;
+          final bucketIndex = pathSegments.indexOf('audiobook-covers');
+          if (bucketIndex != -1 && bucketIndex < pathSegments.length - 1) {
+            coverPath = pathSegments.sublist(bucketIndex + 1).join('/');
+          }
+        } catch (_) {}
+      }
 
       Map<String, dynamic>? response;
       try {
         // Build base data for insert
-        final insertData = {
+        final insertData = <String, dynamic>{
           'title_fa': _titleFaController.text.trim(),
           'title_en': _titleEnController.text.trim().isEmpty
               ? null
@@ -293,17 +397,17 @@ class _AdminUploadAudiobookScreenState extends ConsumerState<AdminUploadAudioboo
           'description_en': _descriptionEnController.text.trim().isEmpty
               ? null
               : _descriptionEnController.text.trim(),
-          'category_id': _isMusic ? null : _selectedCategoryId, // Only for books
-          'narrator_id': _selectedNarratorId ?? adminId, // Use admin's ID if no narrator
+          'category_id': _isMusic ? null : _selectedCategoryId,
+          'narrator_id': _isEbook ? null : (_selectedNarratorId ?? adminId),
           'cover_url': coverUrl,
           'price_toman': price,
           'is_free': _isFree,
           // content_type is the new source of truth for type detection
-          'content_type': _isMusic ? 'music' : (_isPodcast ? 'podcast' : (_isArticle ? 'article' : 'audiobook')),
+          'content_type': _contentType,
           // Keep boolean flags for backward compatibility
           'is_music': _isMusic,
-          'is_parasto_brand': _isParastoBrand, // Display as "پرستو" brand
-          'status': 'draft', // Admin creates as draft, can approve later
+          'is_parasto_brand': _isEbook ? false : _isParastoBrand,
+          'status': 'draft',
           'language': 'fa',
           'chapter_count': 0,
           'total_duration_seconds': 0,
@@ -313,9 +417,27 @@ class _AdminUploadAudiobookScreenState extends ConsumerState<AdminUploadAudioboo
           'is_featured': false,
         };
 
+        // Ebook-specific columns
+        if (_isEbook) {
+          insertData['subtitle_fa'] = _subtitleFaController.text.trim().isEmpty
+              ? null : _subtitleFaController.text.trim();
+          insertData['epub_storage_path'] = epubStoragePath;
+          insertData['page_count'] = int.tryParse(_pageCountController.text) ?? 0;
+          insertData['publisher_fa'] = _publisherController.text.trim().isEmpty
+              ? null : _publisherController.text.trim();
+          insertData['isbn'] = _isbnController.text.trim().isEmpty
+              ? null : _isbnController.text.trim();
+          insertData['publication_year'] = _publicationYearController.text.trim().isEmpty
+              ? null : int.tryParse(_publicationYearController.text.trim());
+          if (_epubBytes != null) {
+            insertData['file_size_bytes'] = _epubBytes!.length;
+          }
+          insertData['uploader_id'] = adminId;
+        }
+
         // Insert with is_podcast and is_article columns (backward compat)
         try {
-          response = await Supabase.instance.client
+          response = await supabase
               .from('audiobooks')
               .insert({...insertData, 'is_podcast': _isPodcast, 'is_article': _isArticle})
               .select()
@@ -327,7 +449,7 @@ class _AdminUploadAudiobookScreenState extends ConsumerState<AdminUploadAudioboo
               errorStr.contains('is_article') || errorStr.contains('is-article') ||
               errorStr.contains('pgrst204') || errorStr.contains('42703')) {
             AppLogger.w('New columns not found, inserting without them');
-            response = await Supabase.instance.client
+            response = await supabase
                 .from('audiobooks')
                 .insert(insertData)
                 .select()
@@ -341,7 +463,7 @@ class _AdminUploadAudiobookScreenState extends ConsumerState<AdminUploadAudioboo
         if (coverPath != null) {
           AppLogger.w('Admin audiobook DB insert failed, cleaning up cover: $coverPath');
           try {
-            await Supabase.instance.client.storage.from(Env.coversBucket).remove([coverPath]);
+            await supabase.storage.from(Env.coversBucket).remove([coverPath]);
           } catch (cleanupError) {
             AppLogger.e('Failed to cleanup orphan cover: $coverPath', error: cleanupError);
           }
@@ -350,117 +472,119 @@ class _AdminUploadAudiobookScreenState extends ConsumerState<AdminUploadAudioboo
       }
 
       if (response == null) {
-        throw Exception('Failed to create audiobook');
+        throw Exception('Failed to create content');
       }
       final audiobookId = response['id'] as int?;
       final audiobookTitle = (response['title_fa'] as String?) ?? '';
 
-      AppLogger.i('Admin created ${_isArticle ? "article" : (_isPodcast ? "podcast" : (_isMusic ? "music" : "book"))} with ID: $audiobookId');
+      AppLogger.i('Admin created $_contentType with ID: $audiobookId');
 
       if (audiobookId == null || audiobookId <= 0) {
         throw Exception('شناسه محتوا برگردانده نشد');
       }
 
-      // 3. Insert into book_metadata or music_metadata table
-      try {
-        if (_isMusic) {
-          // Insert music metadata
-          await Supabase.instance.client
-              .from('music_metadata')
-              .insert({
-                'audiobook_id': audiobookId,
-                'artist_name': _artistNameController.text.trim().isEmpty
-                    ? null : _artistNameController.text.trim(),
-                'artist_name_en': _artistNameEnController.text.trim().isEmpty
-                    ? null : _artistNameEnController.text.trim(),
-                'featured_artists': _featuredArtistsController.text.trim().isEmpty
-                    ? null : _featuredArtistsController.text.trim(),
-                'composer': _composerController.text.trim().isEmpty
-                    ? null : _composerController.text.trim(),
-                'composer_en': _composerEnController.text.trim().isEmpty
-                    ? null : _composerEnController.text.trim(),
-                'lyricist': _lyricistController.text.trim().isEmpty
-                    ? null : _lyricistController.text.trim(),
-                'lyricist_en': _lyricistEnController.text.trim().isEmpty
-                    ? null : _lyricistEnController.text.trim(),
-                'producer': _producerController.text.trim().isEmpty
-                    ? null : _producerController.text.trim(),
-                'album_title': _albumTitleController.text.trim().isEmpty
-                    ? null : _albumTitleController.text.trim(),
-                'album_title_en': _albumTitleEnController.text.trim().isEmpty
-                    ? null : _albumTitleEnController.text.trim(),
-                'label': _labelController.text.trim().isEmpty
-                    ? null : _labelController.text.trim(),
-                'label_en': _labelEnController.text.trim().isEmpty
-                    ? null : _labelEnController.text.trim(),
-                'genre': _genreController.text.trim().isEmpty
-                    ? null : _genreController.text.trim(),
-                'genre_en': _genreEnController.text.trim().isEmpty
-                    ? null : _genreEnController.text.trim(),
-                'release_year': _releaseYearController.text.trim().isEmpty
-                    ? null : int.tryParse(_releaseYearController.text.trim()),
-                'archive_source': _archiveSourceController.text.trim().isEmpty
-                    ? null : _archiveSourceController.text.trim(),
-                'collection_source': _collectionSourceController.text.trim().isEmpty
-                    ? null : _collectionSourceController.text.trim(),
-              })
-              .select()
-              .single();
-          AppLogger.i('Music metadata inserted for audiobook $audiobookId');
-        } else {
-          // Insert book metadata
-          await Supabase.instance.client
-              .from('book_metadata')
-              .insert({
-                'audiobook_id': audiobookId,
-                'author_name': _authorNameController.text.trim().isEmpty
-                    ? null : _authorNameController.text.trim(),
-                'author_name_en': _authorNameEnController.text.trim().isEmpty
-                    ? null : _authorNameEnController.text.trim(),
-                'co_authors': _coAuthorsController.text.trim().isEmpty
-                    ? null : _coAuthorsController.text.trim(),
-                'translator': _translatorController.text.trim().isEmpty
-                    ? null : _translatorController.text.trim(),
-                'translator_en': _translatorEnController.text.trim().isEmpty
-                    ? null : _translatorEnController.text.trim(),
-                'narrator_name': _narratorNameController.text.trim().isEmpty
-                    ? null : _narratorNameController.text.trim(),
-                'narrator_name_en': _narratorNameEnController.text.trim().isEmpty
-                    ? null : _narratorNameEnController.text.trim(),
-                'publisher': _publisherController.text.trim().isEmpty
-                    ? null : _publisherController.text.trim(),
-                'publisher_en': _publisherEnController.text.trim().isEmpty
-                    ? null : _publisherEnController.text.trim(),
-                'publication_year': _publicationYearController.text.trim().isEmpty
-                    ? null : int.tryParse(_publicationYearController.text.trim()),
-                'isbn': _isbnController.text.trim().isEmpty
-                    ? null : _isbnController.text.trim(),
-                'archive_source': _bookArchiveSourceController.text.trim().isEmpty
-                    ? null : _bookArchiveSourceController.text.trim(),
-                'collection_source': _bookCollectionSourceController.text.trim().isEmpty
-                    ? null : _bookCollectionSourceController.text.trim(),
-              })
-              .select()
-              .single();
-          AppLogger.i('Book metadata inserted for audiobook $audiobookId');
-        }
-      } catch (metadataError) {
-        AppLogger.e('Failed to insert metadata for audiobook $audiobookId', error: metadataError);
-        // Audiobook was created but metadata failed - continue but warn user
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('هشدار: اطلاعات تکمیلی ذخیره نشد. بعداً از ویرایش استفاده کنید.'),
-              backgroundColor: AppColors.warning,
-            ),
-          );
+      // 4. Insert into book_metadata or music_metadata table
+      if (!_isEbook) {
+        // Ebooks store their metadata directly in the audiobooks row (author_fa, publisher_fa, etc.)
+        try {
+          if (_isMusic) {
+            // Insert music metadata
+            await supabase
+                .from('music_metadata')
+                .insert({
+                  'audiobook_id': audiobookId,
+                  'artist_name': _artistNameController.text.trim().isEmpty
+                      ? null : _artistNameController.text.trim(),
+                  'artist_name_en': _artistNameEnController.text.trim().isEmpty
+                      ? null : _artistNameEnController.text.trim(),
+                  'featured_artists': _featuredArtistsController.text.trim().isEmpty
+                      ? null : _featuredArtistsController.text.trim(),
+                  'composer': _composerController.text.trim().isEmpty
+                      ? null : _composerController.text.trim(),
+                  'composer_en': _composerEnController.text.trim().isEmpty
+                      ? null : _composerEnController.text.trim(),
+                  'lyricist': _lyricistController.text.trim().isEmpty
+                      ? null : _lyricistController.text.trim(),
+                  'lyricist_en': _lyricistEnController.text.trim().isEmpty
+                      ? null : _lyricistEnController.text.trim(),
+                  'producer': _producerController.text.trim().isEmpty
+                      ? null : _producerController.text.trim(),
+                  'album_title': _albumTitleController.text.trim().isEmpty
+                      ? null : _albumTitleController.text.trim(),
+                  'album_title_en': _albumTitleEnController.text.trim().isEmpty
+                      ? null : _albumTitleEnController.text.trim(),
+                  'label': _labelController.text.trim().isEmpty
+                      ? null : _labelController.text.trim(),
+                  'label_en': _labelEnController.text.trim().isEmpty
+                      ? null : _labelEnController.text.trim(),
+                  'genre': _genreController.text.trim().isEmpty
+                      ? null : _genreController.text.trim(),
+                  'genre_en': _genreEnController.text.trim().isEmpty
+                      ? null : _genreEnController.text.trim(),
+                  'release_year': _releaseYearController.text.trim().isEmpty
+                      ? null : int.tryParse(_releaseYearController.text.trim()),
+                  'archive_source': _archiveSourceController.text.trim().isEmpty
+                      ? null : _archiveSourceController.text.trim(),
+                  'collection_source': _collectionSourceController.text.trim().isEmpty
+                      ? null : _collectionSourceController.text.trim(),
+                })
+                .select()
+                .single();
+            AppLogger.i('Music metadata inserted for audiobook $audiobookId');
+          } else {
+            // Insert book metadata
+            await supabase
+                .from('book_metadata')
+                .insert({
+                  'audiobook_id': audiobookId,
+                  'author_name': _authorNameController.text.trim().isEmpty
+                      ? null : _authorNameController.text.trim(),
+                  'author_name_en': _authorNameEnController.text.trim().isEmpty
+                      ? null : _authorNameEnController.text.trim(),
+                  'co_authors': _coAuthorsController.text.trim().isEmpty
+                      ? null : _coAuthorsController.text.trim(),
+                  'translator': _translatorController.text.trim().isEmpty
+                      ? null : _translatorController.text.trim(),
+                  'translator_en': _translatorEnController.text.trim().isEmpty
+                      ? null : _translatorEnController.text.trim(),
+                  'narrator_name': _narratorNameController.text.trim().isEmpty
+                      ? null : _narratorNameController.text.trim(),
+                  'narrator_name_en': _narratorNameEnController.text.trim().isEmpty
+                      ? null : _narratorNameEnController.text.trim(),
+                  'publisher': _publisherController.text.trim().isEmpty
+                      ? null : _publisherController.text.trim(),
+                  'publisher_en': _publisherEnController.text.trim().isEmpty
+                      ? null : _publisherEnController.text.trim(),
+                  'publication_year': _publicationYearController.text.trim().isEmpty
+                      ? null : int.tryParse(_publicationYearController.text.trim()),
+                  'isbn': _isbnController.text.trim().isEmpty
+                      ? null : _isbnController.text.trim(),
+                  'archive_source': _bookArchiveSourceController.text.trim().isEmpty
+                      ? null : _bookArchiveSourceController.text.trim(),
+                  'collection_source': _bookCollectionSourceController.text.trim().isEmpty
+                      ? null : _bookCollectionSourceController.text.trim(),
+                })
+                .select()
+                .single();
+            AppLogger.i('Book metadata inserted for audiobook $audiobookId');
+          }
+        } catch (metadataError) {
+          AppLogger.e('Failed to insert metadata for audiobook $audiobookId', error: metadataError);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('هشدار: اطلاعات تکمیلی ذخیره نشد. بعداً از ویرایش استفاده کنید.'),
+                backgroundColor: AppColors.warning,
+              ),
+            );
+          }
         }
       }
 
-      // 4. If music, insert music category association (single category)
+      // 5. If music, insert music category association (single category)
       if (_isMusic && _selectedMusicCategoryId != null) {
         try {
-          await Supabase.instance.client
+          await supabase
               .from('audiobook_music_categories')
               .insert({
                 'audiobook_id': audiobookId,
@@ -473,57 +597,71 @@ class _AdminUploadAudiobookScreenState extends ConsumerState<AdminUploadAudioboo
         }
       }
 
-      // 5. Auto-sync creators from metadata fields
-      final creatorService = CreatorService();
-      await creatorService.syncCreatorsForAudiobook(
-        audiobookId: audiobookId,
-        contentType: _isMusic ? 'music' : 'audiobook',
-        // Book fields
-        authorName: _isMusic ? null : _authorNameController.text,
-        authorNameEn: _isMusic ? null : _authorNameEnController.text,
-        translatorName: _isMusic ? null : _translatorController.text,
-        translatorNameEn: _isMusic ? null : _translatorEnController.text,
-        narratorName: _isMusic ? null : _narratorNameController.text,
-        narratorNameEn: _isMusic ? null : _narratorNameEnController.text,
-        publisherName: _isMusic ? null : _publisherController.text,
-        publisherNameEn: _isMusic ? null : _publisherEnController.text,
-        // Music fields
-        artistName: _isMusic ? _artistNameController.text : null,
-        artistNameEn: _isMusic ? _artistNameEnController.text : null,
-        composerName: _isMusic ? _composerController.text : null,
-        composerNameEn: _isMusic ? _composerEnController.text : null,
-        lyricistName: _isMusic ? _lyricistController.text : null,
-        lyricistNameEn: _isMusic ? _lyricistEnController.text : null,
-        labelName: _isMusic ? _labelController.text : null,
-        labelNameEn: _isMusic ? _labelEnController.text : null,
-      );
-      AppLogger.i('Creator sync completed for audiobook $audiobookId');
+      // 6. Auto-sync creators from metadata fields (not for ebooks — ebook creators are in author_fa directly)
+      if (!_isEbook) {
+        final creatorService = CreatorService();
+        await creatorService.syncCreatorsForAudiobook(
+          audiobookId: audiobookId,
+          contentType: _isMusic ? 'music' : 'audiobook',
+          authorName: _isMusic ? null : _authorNameController.text,
+          authorNameEn: _isMusic ? null : _authorNameEnController.text,
+          translatorName: _isMusic ? null : _translatorController.text,
+          translatorNameEn: _isMusic ? null : _translatorEnController.text,
+          narratorName: _isMusic ? null : _narratorNameController.text,
+          narratorNameEn: _isMusic ? null : _narratorNameEnController.text,
+          publisherName: _isMusic ? null : _publisherController.text,
+          publisherNameEn: _isMusic ? null : _publisherEnController.text,
+          artistName: _isMusic ? _artistNameController.text : null,
+          artistNameEn: _isMusic ? _artistNameEnController.text : null,
+          composerName: _isMusic ? _composerController.text : null,
+          composerNameEn: _isMusic ? _composerEnController.text : null,
+          lyricistName: _isMusic ? _lyricistController.text : null,
+          lyricistNameEn: _isMusic ? _lyricistEnController.text : null,
+          labelName: _isMusic ? _labelController.text : null,
+          labelNameEn: _isMusic ? _labelEnController.text : null,
+        );
+        AppLogger.i('Creator sync completed for audiobook $audiobookId');
+      }
 
-      // 6. Show success and navigate to bulk chapter upload
+      // 7. Show success and navigate
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(_isMusic
-                ? 'موسیقی با موفقیت ایجاد شد. حالا فایل‌ها را اضافه کنید.'
-                : 'کتاب با موفقیت ایجاد شد. حالا فصل‌ها را اضافه کنید.'),
-            backgroundColor: AppColors.success,
-          ),
-        );
-
-        // Navigate to bulk chapter upload
-        final result = await Navigator.push<bool>(
-          context,
-          MaterialPageRoute<bool>(
-            builder: (context) => AdminBulkChapterUploadScreen(
-              audiobookId: audiobookId,
-              audiobookTitle: audiobookTitle,
-              narratorId: _selectedNarratorId ?? adminId ?? '',
+        if (_isEbook) {
+          // Ebooks: show success and pop back (no chapter management)
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('کتاب با موفقیت ایجاد شد'),
+              backgroundColor: AppColors.success,
             ),
-          ),
-        );
+          );
+          Navigator.pop(context, true);
+        } else {
+          // Audio content: navigate to bulk chapter upload
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(switch (_contentType) {
+                'music' => 'موسیقی با موفقیت ایجاد شد. حالا فایل‌ها را اضافه کنید.',
+                'podcast' => 'پادکست با موفقیت ایجاد شد. حالا قسمت‌ها را اضافه کنید.',
+                'article' => 'مقاله با موفقیت ایجاد شد. حالا فایل را اضافه کنید.',
+                _ => 'کتاب صوتی با موفقیت ایجاد شد. حالا فصل‌ها را اضافه کنید.',
+              }),
+              backgroundColor: AppColors.success,
+            ),
+          );
 
-        if (result == true && mounted) {
-          Navigator.pop(context, true); // Return success to refresh list
+          final result = await Navigator.push<bool>(
+            context,
+            MaterialPageRoute<bool>(
+              builder: (context) => AdminBulkChapterUploadScreen(
+                audiobookId: audiobookId,
+                audiobookTitle: audiobookTitle,
+                narratorId: _selectedNarratorId ?? adminId ?? '',
+              ),
+            ),
+          );
+
+          if (result == true && mounted) {
+            Navigator.pop(context, true);
+          }
         }
       }
     } catch (e) {
@@ -531,8 +669,55 @@ class _AdminUploadAudiobookScreenState extends ConsumerState<AdminUploadAudioboo
       setState(() => _error = e.toString());
     } finally {
       if (mounted) {
-        setState(() => _isLoading = false);
+        setState(() {
+          _isLoading = false;
+          _isUploading = false;
+          _uploadProgress = null;
+        });
       }
+    }
+  }
+
+  /// Upload ebook cover to ebook-files bucket (matching existing ebook cover storage)
+  Future<String?> _uploadEbookCover() async {
+    if (_coverImageBytes == null || _coverFileName == null) return null;
+
+    final userId = Supabase.instance.client.auth.currentUser?.id ?? 'admin';
+    final ext = _coverFileName!.split('.').last.toLowerCase();
+    final uniqueId = '${DateTime.now().millisecondsSinceEpoch}_${userId.hashCode}';
+    final coverPath = 'covers/$uniqueId.$ext';
+
+    // Map file extension to proper MIME type
+    final mimeType = switch (ext) {
+      'png' => 'image/png',
+      'gif' => 'image/gif',
+      'webp' => 'image/webp',
+      _ => 'image/jpeg',
+    };
+
+    try {
+      await Supabase.instance.client.storage.from('ebook-files').uploadBinary(
+        coverPath,
+        _coverImageBytes!,
+        fileOptions: FileOptions(contentType: mimeType),
+      );
+
+      // Try signed URL first (ebook-files bucket may be private), fallback to public URL
+      String coverUrl;
+      try {
+        coverUrl = await Supabase.instance.client.storage
+            .from('ebook-files')
+            .createSignedUrl(coverPath, 60 * 60 * 24 * 365 * 10); // 10 years
+      } catch (e) {
+        coverUrl = Supabase.instance.client.storage
+            .from('ebook-files')
+            .getPublicUrl(coverPath);
+      }
+
+      return coverUrl;
+    } catch (e) {
+      AppLogger.e('Ebook cover upload error', error: e);
+      throw Exception('خطا در آپلود تصویر جلد');
     }
   }
 
@@ -548,10 +733,30 @@ class _AdminUploadAudiobookScreenState extends ConsumerState<AdminUploadAudioboo
         backgroundColor: AppColors.background,
         appBar: AppBar(
           backgroundColor: AppColors.background,
-          title: Text(_isMusic ? 'آپلود موسیقی (ادمین)' : 'آپلود کتاب (ادمین)'),
+          title: Text(switch (_contentType) {
+            'music' => 'آپلود موسیقی (ادمین)',
+            'ebook' => 'آپلود کتاب (ادمین)',
+            'podcast' => 'آپلود پادکست (ادمین)',
+            'article' => 'آپلود مقاله (ادمین)',
+            _ => 'آپلود کتاب صوتی (ادمین)',
+          }),
           centerTitle: true,
         ),
-        body: SingleChildScrollView(
+        body: _isUploading
+            ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 24),
+                    Text(
+                      _uploadProgress ?? 'در حال آپلود...',
+                      style: const TextStyle(color: AppColors.textSecondary, fontSize: 16),
+                    ),
+                  ],
+                ),
+              )
+            : SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Form(
             key: _formKey,
@@ -572,7 +777,7 @@ class _AdminUploadAudiobookScreenState extends ConsumerState<AdminUploadAudioboo
                   ),
                   child: Row(
                     children: [
-                      Icon(_isMusic ? Icons.music_note : Icons.admin_panel_settings, color: AppColors.primary),
+                      Icon(_isEbook ? Icons.auto_stories : (_isMusic ? Icons.music_note : Icons.admin_panel_settings), color: AppColors.primary),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
@@ -587,18 +792,20 @@ class _AdminUploadAudiobookScreenState extends ConsumerState<AdminUploadAudioboo
                 ),
                 const SizedBox(height: 20),
 
-                // Parasto Brand Toggle - Important decision first
-                _buildParastoBrandToggle(),
-                const SizedBox(height: 16),
+                // Parasto Brand Toggle - Important decision first (not for ebooks)
+                if (_isAudioType) ...[
+                  _buildParastoBrandToggle(),
+                  const SizedBox(height: 16),
 
-                // Narrator selector (optional, only show if not Parasto brand)
-                if (!_isParastoBrand) ...[
-                  narratorsAsync.when(
-                    loading: () => const LinearProgressIndicator(),
-                    error: (e, _) => Text('خطا در بارگذاری گویندگان: $e'),
-                    data: _buildNarratorSelector,
-                  ),
-                  const SizedBox(height: 20),
+                  // Narrator selector (optional, only show if not Parasto brand)
+                  if (!_isParastoBrand) ...[
+                    narratorsAsync.when(
+                      loading: () => const LinearProgressIndicator(),
+                      error: (e, _) => Text('خطا در بارگذاری گویندگان: $e'),
+                      data: _buildNarratorSelector,
+                    ),
+                    const SizedBox(height: 20),
+                  ],
                 ],
 
                 // Cover Image Picker
@@ -610,7 +817,7 @@ class _AdminUploadAudiobookScreenState extends ConsumerState<AdminUploadAudioboo
                   controller: _titleFaController,
                   decoration: InputDecoration(
                     labelText: 'عنوان فارسی *',
-                    hintText: _isMusic ? 'مثال: آهنگ زیبا' : 'مثال: شازده کوچولو',
+                    hintText: _isMusic ? 'مثال: آهنگ زیبا' : (_isEbook ? 'مثال: شازده کوچولو' : 'مثال: شازده کوچولو'),
                     prefixIcon: const Icon(Icons.title),
                   ),
                   validator: (value) {
@@ -621,6 +828,36 @@ class _AdminUploadAudiobookScreenState extends ConsumerState<AdminUploadAudioboo
                   },
                 ),
                 const SizedBox(height: 24),
+
+                // Ebook-specific fields: subtitle, EPUB picker, page count
+                if (_isEbook) ...[
+                  // Subtitle (Farsi)
+                  TextFormField(
+                    controller: _subtitleFaController,
+                    decoration: const InputDecoration(
+                      labelText: 'زیرعنوان (اختیاری)',
+                      hintText: 'مثال: داستان بلند',
+                      prefixIcon: Icon(Icons.subtitles),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // EPUB file picker
+                  _buildEpubPicker(),
+                  const SizedBox(height: 16),
+
+                  // Page count
+                  TextFormField(
+                    controller: _pageCountController,
+                    decoration: const InputDecoration(
+                      labelText: 'تعداد صفحات',
+                      hintText: 'مثال: ۲۴۰',
+                      prefixIcon: Icon(Icons.format_list_numbered),
+                    ),
+                    keyboardType: TextInputType.number,
+                  ),
+                  const SizedBox(height: 24),
+                ],
 
                 // Author/Artist Section (dynamic based on content type)
                 _buildAuthorArtistSection(),
@@ -664,7 +901,7 @@ class _AdminUploadAudiobookScreenState extends ConsumerState<AdminUploadAudioboo
                   controller: _descriptionFaController,
                   decoration: InputDecoration(
                     labelText: 'توضیحات فارسی *',
-                    hintText: _isMusic ? 'درباره این موسیقی بنویسید...' : 'درباره کتاب بنویسید...',
+                    hintText: _isMusic ? 'درباره این موسیقی بنویسید...' : (_isEbook ? 'درباره کتاب بنویسید...' : 'درباره کتاب بنویسید...'),
                     prefixIcon: const Icon(Icons.description),
                     alignLabelWithHint: true,
                   ),
@@ -721,9 +958,9 @@ class _AdminUploadAudiobookScreenState extends ConsumerState<AdminUploadAudioboo
                             color: Colors.white,
                           ),
                         )
-                      : const Text(
-                          'ذخیره و افزودن فصل‌ها',
-                          style: TextStyle(fontSize: 16),
+                      : Text(
+                          _isEbook ? 'ذخیره کتاب' : 'ذخیره و افزودن فصل‌ها',
+                          style: const TextStyle(fontSize: 16),
                         ),
                 ),
                 const SizedBox(height: 32),
@@ -886,7 +1123,7 @@ class _AdminUploadAudiobookScreenState extends ConsumerState<AdminUploadAudioboo
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    _isMusic ? 'کاور را انتخاب کنید' : 'تصویر جلد را انتخاب کنید',
+                    _isMusic ? 'کاور را انتخاب کنید' : 'تصویر جلد را انتخاب کنید *',
                     style: const TextStyle(
                       color: AppColors.textSecondary,
                       fontSize: 14,
@@ -932,215 +1169,219 @@ class _AdminUploadAudiobookScreenState extends ConsumerState<AdminUploadAudioboo
             ],
           ),
           const SizedBox(height: 12),
+          // First row: Audiobook, Music, Podcast
           Row(
             children: [
-              // Audiobook option
               Expanded(
-                child: GestureDetector(
+                child: _buildTypeOption(
+                  icon: Icons.headphones,
+                  label: 'کتاب صوتی',
+                  isSelected: _contentType == 'audiobook',
                   onTap: () => setState(() {
                     _isMusic = false;
                     _isPodcast = false;
                     _isArticle = false;
+                    _isEbook = false;
                   }),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    decoration: BoxDecoration(
-                      color: !_isMusic && !_isPodcast && !_isArticle
-                          ? AppColors.primary.withValues(alpha: 0.1)
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: !_isMusic && !_isPodcast && !_isArticle
-                            ? AppColors.primary
-                            : AppColors.border,
-                        width: !_isMusic && !_isPodcast && !_isArticle ? 2 : 1,
-                      ),
-                    ),
-                    child: Column(
-                      children: [
-                        Icon(
-                          Icons.headphones,
-                          size: 28,
-                          color: !_isMusic && !_isPodcast && !_isArticle
-                              ? AppColors.primary
-                              : AppColors.textTertiary,
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          'کتاب صوتی',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: !_isMusic && !_isPodcast && !_isArticle
-                                ? FontWeight.w600
-                                : FontWeight.normal,
-                            color: !_isMusic && !_isPodcast && !_isArticle
-                                ? AppColors.primary
-                                : AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                 ),
               ),
               const SizedBox(width: 12),
-              // Music option
               Expanded(
-                child: GestureDetector(
+                child: _buildTypeOption(
+                  icon: Icons.music_note,
+                  label: 'موسیقی',
+                  isSelected: _isMusic,
                   onTap: () => setState(() {
                     _isMusic = true;
                     _isPodcast = false;
                     _isArticle = false;
+                    _isEbook = false;
                   }),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    decoration: BoxDecoration(
-                      color: _isMusic
-                          ? AppColors.primary.withValues(alpha: 0.1)
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: _isMusic
-                            ? AppColors.primary
-                            : AppColors.border,
-                        width: _isMusic ? 2 : 1,
-                      ),
-                    ),
-                    child: Column(
-                      children: [
-                        Icon(
-                          Icons.music_note,
-                          size: 28,
-                          color: _isMusic
-                              ? AppColors.primary
-                              : AppColors.textTertiary,
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          'موسیقی',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: _isMusic
-                                ? FontWeight.w600
-                                : FontWeight.normal,
-                            color: _isMusic
-                                ? AppColors.primary
-                                : AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                 ),
               ),
               const SizedBox(width: 12),
-              // Podcast option
               Expanded(
-                child: GestureDetector(
+                child: _buildTypeOption(
+                  icon: Icons.podcasts,
+                  label: 'پادکست',
+                  isSelected: _isPodcast,
                   onTap: () => setState(() {
                     _isMusic = false;
                     _isPodcast = true;
                     _isArticle = false;
+                    _isEbook = false;
                   }),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    decoration: BoxDecoration(
-                      color: _isPodcast
-                          ? AppColors.primary.withValues(alpha: 0.1)
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: _isPodcast
-                            ? AppColors.primary
-                            : AppColors.border,
-                        width: _isPodcast ? 2 : 1,
-                      ),
-                    ),
-                    child: Column(
-                      children: [
-                        Icon(
-                          Icons.podcasts,
-                          size: 28,
-                          color: _isPodcast
-                              ? AppColors.primary
-                              : AppColors.textTertiary,
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          'پادکست',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: _isPodcast
-                                ? FontWeight.w600
-                                : FontWeight.normal,
-                            color: _isPodcast
-                                ? AppColors.primary
-                                : AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 12),
-          // Article option (second row)
+          // Second row: Article + Ebook
           Row(
             children: [
+              // Article option
               Expanded(
-                child: GestureDetector(
+                child: _buildTypeOption(
+                  icon: Icons.article_rounded,
+                  label: 'مقاله',
+                  isSelected: _isArticle,
                   onTap: () => setState(() {
                     _isMusic = false;
                     _isPodcast = false;
                     _isArticle = true;
+                    _isEbook = false;
                   }),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    decoration: BoxDecoration(
-                      color: _isArticle
-                          ? AppColors.primary.withValues(alpha: 0.1)
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: _isArticle
-                            ? AppColors.primary
-                            : AppColors.border,
-                        width: _isArticle ? 2 : 1,
-                      ),
-                    ),
-                    child: Column(
-                      children: [
-                        Icon(
-                          Icons.article_rounded,
-                          size: 28,
-                          color: _isArticle
-                              ? AppColors.primary
-                              : AppColors.textTertiary,
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          'مقاله',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: _isArticle
-                                ? FontWeight.w600
-                                : FontWeight.normal,
-                            color: _isArticle
-                                ? AppColors.primary
-                                : AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                 ),
               ),
-              const Expanded(flex: 2, child: SizedBox()), // Spacer to keep layout balanced
+              const SizedBox(width: 12),
+              // Ebook option
+              Expanded(
+                child: _buildTypeOption(
+                  icon: Icons.auto_stories_rounded,
+                  label: 'کتاب',
+                  isSelected: _isEbook,
+                  onTap: () => setState(() {
+                    _isMusic = false;
+                    _isPodcast = false;
+                    _isArticle = false;
+                    _isEbook = true;
+                  }),
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(child: SizedBox()), // Spacer to keep layout balanced
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  /// EPUB file picker for ebooks
+  Widget _buildEpubPicker() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: _epubBytes != null
+              ? AppColors.success
+              : AppColors.border,
+          width: _epubBytes != null ? 2 : 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                _epubBytes != null ? Icons.check_circle : Icons.book,
+                color: _epubBytes != null ? AppColors.success : AppColors.primary,
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'فایل EPUB *',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (_epubBytes != null) ...[
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.success.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.insert_drive_file, color: AppColors.success, size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _epubFileName ?? 'فایل انتخاب شده',
+                      style: const TextStyle(color: AppColors.textPrimary, fontSize: 13),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  Text(
+                    '${(_epubBytes!.length / 1024 / 1024).toStringAsFixed(1)} MB',
+                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  icon: Icon(_epubBytes != null ? Icons.refresh : Icons.upload_file),
+                  label: Text(_epubBytes != null ? 'تغییر فایل' : 'انتخاب فایل EPUB'),
+                  onPressed: _pickEpub,
+                ),
+              ),
+              if (_epubBytes != null) ...[
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: const Icon(Icons.close, color: AppColors.error),
+                  onPressed: () => setState(() {
+                    _epubBytes = null;
+                    _epubFileName = null;
+                  }),
+                  tooltip: 'حذف',
+                ),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Reusable content type option button
+  Widget _buildTypeOption({
+    required IconData icon,
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.primary.withValues(alpha: 0.1)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isSelected ? AppColors.primary : AppColors.border,
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, size: 28, color: isSelected ? AppColors.primary : AppColors.textTertiary),
+            const SizedBox(height: 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                color: isSelected ? AppColors.primary : AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1262,14 +1503,14 @@ class _AdminUploadAudiobookScreenState extends ConsumerState<AdminUploadAudioboo
     );
   }
 
-  /// Metadata section - different for books vs music vs podcasts vs articles
+  /// Metadata section - different for books vs music vs podcasts vs articles vs ebooks
   Widget _buildAuthorArtistSection() {
     if (_isMusic) {
       return _buildMusicMetadataSection();
     } else if (_isPodcast) {
       return _buildPodcastMetadataSection();
     } else {
-      // Both books and articles use book metadata (narrator, author, etc.)
+      // Books, articles, and ebooks all use book metadata (author, translator, etc.)
       return _buildBookMetadataSection();
     }
   }
@@ -1336,8 +1577,8 @@ class _AdminUploadAudiobookScreenState extends ConsumerState<AdminUploadAudioboo
           ),
           const SizedBox(height: 16),
 
-          // گوینده - Narrator (only for audiobooks, not music)
-          if (!_isMusic) ...[
+          // گوینده - Narrator (only for audiobooks/articles, not music or ebooks)
+          if (!_isMusic && !_isEbook) ...[
             TextFormField(
               controller: _narratorNameController,
               decoration: const InputDecoration(
