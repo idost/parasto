@@ -605,7 +605,8 @@ class MynaAudioHandler extends BaseAudioHandler with SeekHandler {
         final durationSeconds = (nextChapter['duration_seconds'] as int?) ?? 0;
 
         // Get narrator/artist name
-        final isMusic = (audiobook['is_music'] as bool?) ?? false;
+        final contentType = (audiobook['content_type'] as String?) ?? 'audiobook';
+        final isMusic = contentType == 'music';
         final isParastoBrand = (audiobook['is_parasto_brand'] as bool?) ?? false;
         String artistName = 'پرستو';
         if (isParastoBrand) {
@@ -832,7 +833,8 @@ class MynaAudioHandler extends BaseAudioHandler with SeekHandler {
     // Get narrator/artist name for display from correct metadata table
     // (not profiles which is the uploader account, not the actual narrator/artist)
     // Priority: is_parasto_brand > metadata table > author field > default "پرستو"
-    final isMusic = (audiobook['is_music'] as bool?) ?? false;
+    final contentType = (audiobook['content_type'] as String?) ?? 'audiobook';
+    final isMusic = contentType == 'music';
     final isParastoBrand = (audiobook['is_parasto_brand'] as bool?) ?? false;
     String artistName = 'پرستو';
     if (isParastoBrand) {

@@ -474,7 +474,7 @@ class _AdminUploadAudiobookScreenState extends ConsumerState<AdminUploadAudioboo
       final creatorService = CreatorService();
       await creatorService.syncCreatorsForAudiobook(
         audiobookId: audiobookId,
-        isMusic: _isMusic,
+        contentType: _isMusic ? 'music' : 'audiobook',
         // Book fields
         authorName: _isMusic ? null : _authorNameController.text,
         authorNameEn: _isMusic ? null : _authorNameEnController.text,

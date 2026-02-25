@@ -95,7 +95,7 @@ class AudioState {
   bool get hasAudio => audiobook != null;
   bool get hasError => errorType != AudioErrorType.none;
   bool get hasSleepTimer => sleepTimerMode != SleepTimerMode.off;
-  bool get isMusic => audiobook?['is_music'] == true;
+  bool get isMusic => audiobook?['content_type'] == 'music';
 
   /// True if currently playing from a playlist queue
   bool get isPlaylistActive => playlistId != null && playlistItems.isNotEmpty;
@@ -879,7 +879,7 @@ class AudioNotifier extends StateNotifier<AudioState> with WidgetsBindingObserve
     if (chapters.isEmpty) {
       AppLogger.audioNotif('PLAY_INTERNAL: [req=$requestId] FAILED - no chapters');
       AppLogger.w('PLAYER: No chapters to play');
-      final isMusic = audiobook['is_music'] == true;
+      final isMusic = audiobook['content_type'] == 'music';
       state = state.copyWith(
         errorType: AudioErrorType.audioNotFound,
         errorMessage: isMusic ? 'هیچ آهنگی برای پخش وجود ندارد' : 'هیچ فصلی برای پخش وجود ندارد',
@@ -918,7 +918,7 @@ class AudioNotifier extends StateNotifier<AudioState> with WidgetsBindingObserve
     if (!accessResult.canAccess) {
       AppLogger.audioNotif('PLAY_INTERNAL: [req=$requestId] BLOCKED - ${accessResult.type}');
       AppLogger.w('PLAYER: Access denied - ${accessResult.type}');
-      final isMusic = audiobook['is_music'] == true;
+      final isMusic = audiobook['content_type'] == 'music';
       state = state.copyWith(
         errorType: AudioErrorType.unauthorized,
         errorMessage: accessResult.needsSubscription
@@ -977,7 +977,7 @@ class AudioNotifier extends StateNotifier<AudioState> with WidgetsBindingObserve
       if (audioSource == null || audioSource.isEmpty) {
         AppLogger.e('PLAYER: No audio source found for chapter');
         if (!isCancelled()) {
-          final isMusic = audiobook['is_music'] == true;
+          final isMusic = audiobook['content_type'] == 'music';
           state = state.copyWith(
             isLoading: false,
             errorType: AudioErrorType.audioNotFound,
@@ -1002,7 +1002,7 @@ class AudioNotifier extends StateNotifier<AudioState> with WidgetsBindingObserve
         }
         if (offline) {
           AppLogger.e('PLAYER: Offline and chapter not downloaded');
-          final isMusic = audiobook['is_music'] == true;
+          final isMusic = audiobook['content_type'] == 'music';
           state = state.copyWith(
             isLoading: false,
             errorType: AudioErrorType.networkError,

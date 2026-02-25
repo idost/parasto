@@ -471,7 +471,7 @@ class _AdminEditAudiobookScreenState extends ConsumerState<AdminEditAudiobookScr
       final creatorService = CreatorService();
       await creatorService.syncCreatorsForAudiobook(
         audiobookId: audiobookId,
-        isMusic: _isMusic,
+        contentType: _isMusic ? 'music' : 'audiobook',
         // Book fields - author_fa/translator_fa are the legacy fields shown on this form
         authorName: _isMusic ? null : _authorFaController.text,
         authorNameEn: _isMusic ? null : _authorEnController.text,
@@ -517,7 +517,7 @@ class _AdminEditAudiobookScreenState extends ConsumerState<AdminEditAudiobookScr
       final creatorService = CreatorService();
       final success = await creatorService.syncCreatorsForAudiobook(
         audiobookId: audiobookId,
-        isMusic: _isMusic,
+        contentType: _isMusic ? 'music' : 'audiobook',
         // Book fields
         authorName: _isMusic ? null : _authorFaController.text,
         authorNameEn: _isMusic ? null : _authorEnController.text,

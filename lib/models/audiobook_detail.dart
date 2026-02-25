@@ -27,10 +27,16 @@ class AudiobookDetail {
   final DateTime? publishedAt;
   final DateTime createdAt;
 
-  // Content type flags
-  final bool isMusic;
-  final bool isPodcast;
+  // Content type — source of truth
+  final String contentType;
   final bool isParastoBrand;
+
+  // Derived from contentType — backward compat getters
+  bool get isMusic => contentType == 'music';
+  bool get isPodcast => contentType == 'podcast';
+  bool get isArticle => contentType == 'article';
+  bool get isEbook => contentType == 'ebook';
+  bool get isAudiobook => contentType == 'audiobook';
 
   // Book metadata (for audiobooks)
   final BookMetadata? bookMetadata;
@@ -61,8 +67,7 @@ class AudiobookDetail {
     required this.reviewCount,
     this.publishedAt,
     required this.createdAt,
-    this.isMusic = false,
-    this.isPodcast = false,
+    this.contentType = 'audiobook',
     this.isParastoBrand = false,
     this.bookMetadata,
     this.musicMetadata,
@@ -109,8 +114,7 @@ class AudiobookDetail {
       reviewCount: (json['review_count'] as int?) ?? 0,
       publishedAt: _parseDateTime(json['published_at']),
       createdAt: _parseDateTime(json['created_at']) ?? DateTime.now(),
-      isMusic: (json['is_music'] as bool?) ?? false,
-      isPodcast: (json['is_podcast'] as bool?) ?? false,
+      contentType: (json['content_type'] as String?) ?? 'audiobook',
       isParastoBrand: (json['is_parasto_brand'] as bool?) ?? false,
       bookMetadata: bookMeta,
       musicMetadata: musicMeta,
@@ -140,8 +144,9 @@ class AudiobookDetail {
     'review_count': reviewCount,
     'published_at': publishedAt?.toIso8601String(),
     'created_at': createdAt.toIso8601String(),
-    'is_music': isMusic,
-    'is_podcast': isPodcast,
+    'content_type': contentType,
+    'is_music': isMusic,       // backward compat — derived from contentType
+    'is_podcast': isPodcast,   // backward compat — derived from contentType
     'is_parasto_brand': isParastoBrand,
     if (bookMetadata != null) 'book_metadata': bookMetadata!.toJson(),
     if (musicMetadata != null) 'music_metadata': musicMetadata!.toJson(),

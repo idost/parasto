@@ -82,11 +82,11 @@ final categoryAffinityProvider =
           audiobook_id,
           completion_percentage,
           total_listen_time_seconds,
-          audiobooks!inner(id, category_id, is_music, categories(id, name_fa))
+          audiobooks!inner(id, category_id, content_type, categories(id, name_fa))
         ''')
         .eq('user_id', user.id as Object)
         .gt('completion_percentage', 10) // At least 10% listened
-        .eq('audiobooks.is_music', false); // Only audiobooks, not music
+        .eq('audiobooks.content_type', 'audiobook'); // Only audiobooks, not music
 
     if ((progressResponse as List).isEmpty) {
       return UserCategoryProfile.empty;
@@ -222,10 +222,10 @@ final favoriteCategoriesContentProvider =
       // Fetch top books in this category
       final booksResponse = await Supabase.instance.client
           .from('audiobooks')
-          .select('id, title_fa, title_en, cover_url, author_fa, avg_rating, play_count, is_music, status')
+          .select('id, title_fa, title_en, cover_url, author_fa, avg_rating, play_count, content_type, status')
           .eq('category_id', category.categoryId)
           .eq('status', 'approved')
-          .eq('is_music', false)
+          .eq('content_type', 'audiobook')
           .order('avg_rating', ascending: false)
           .order('play_count', ascending: false)
           .limit(10);

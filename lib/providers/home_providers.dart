@@ -58,15 +58,14 @@ Future<List<Map<String, dynamic>>> _fetchFeatured() async {
     final featuredResponse = await Supabase.instance.client
         .from('audiobooks')
         .select('''
-          id, title_fa, title_en, cover_url, is_music, is_free,
+          id, title_fa, title_en, cover_url, content_type, is_free,
           total_duration_seconds, author_fa, play_count, is_featured, status,
           categories(name_fa),
           book_metadata(narrator_name)
         ''')
         .eq('status', 'approved')
         .eq('is_featured', true)
-        .eq('is_music', false)
-        .eq('is_article', false)
+        .inFilter('content_type', ['audiobook', 'podcast'])
         .order('play_count', ascending: false)
         .order('created_at', ascending: false)
         .limit(10);
@@ -88,14 +87,13 @@ Future<List<Map<String, dynamic>>> _fetchFeatured() async {
     var query = Supabase.instance.client
         .from('audiobooks')
         .select('''
-          id, title_fa, title_en, cover_url, is_music, is_free,
+          id, title_fa, title_en, cover_url, content_type, is_free,
           total_duration_seconds, author_fa, play_count, is_featured, status,
           categories(name_fa),
           book_metadata(narrator_name)
         ''')
         .eq('status', 'approved')
-        .eq('is_music', false)
-        .eq('is_article', false)
+        .inFilter('content_type', ['audiobook', 'podcast'])
         .eq('is_featured', false);
 
     // Exclude already-included featured items using NOT IN filter
@@ -153,14 +151,13 @@ Future<List<Map<String, dynamic>>> _fetchNewReleases() async {
     final response = await Supabase.instance.client
         .from('audiobooks')
         .select('''
-          id, title_fa, title_en, cover_url, is_music, is_free,
+          id, title_fa, title_en, cover_url, content_type, is_free,
           total_duration_seconds, author_fa, play_count, status,
           categories(name_fa),
           book_metadata(narrator_name)
         ''')
         .eq('status', 'approved')
-        .eq('is_music', false) // Exclude music from books section
-        .eq('is_article', false) // Exclude articles from books section
+        .inFilter('content_type', ['audiobook', 'podcast']) // Books section: audiobooks + podcasts
         .order('created_at', ascending: false)
         .limit(10);
     final result = List<Map<String, dynamic>>.from(response);
@@ -209,14 +206,13 @@ Future<List<Map<String, dynamic>>> _fetchPopular() async {
     final response = await Supabase.instance.client
         .from('audiobooks')
         .select('''
-          id, title_fa, title_en, cover_url, is_music, is_free,
+          id, title_fa, title_en, cover_url, content_type, is_free,
           total_duration_seconds, author_fa, play_count, status,
           categories(name_fa),
           book_metadata(narrator_name)
         ''')
         .eq('status', 'approved')
-        .eq('is_music', false) // Exclude music from books section
-        .eq('is_article', false) // Exclude articles from books section
+        .inFilter('content_type', ['audiobook', 'podcast']) // Books section: audiobooks + podcasts
         .order('play_count', ascending: false)
         .order('created_at', ascending: false) // Secondary sort for deterministic results
         .limit(10);
@@ -280,7 +276,7 @@ final formCategoriesProvider = FutureProvider<List<Map<String, dynamic>>>((ref) 
   }).toList();
 });
 
-/// Provider for "Continue Listening" - the most recent INCOMPLETE BOOK (is_music=false)
+/// Provider for "Continue Listening" - the most recent INCOMPLETE BOOK (content_type=audiobook|podcast)
 /// Includes chapters for immediate playback and time remaining calculation
 /// OPTIMIZED: Runs audiobook and chapters queries in parallel
 /// NOTE: Music continue listening is handled by musicContinueListeningProvider
@@ -290,8 +286,8 @@ final continueListeningProvider = FutureProvider.autoDispose<Map<String, dynamic
   if (user == null) return null;
 
   try {
-    // Get recent incomplete items - we need to find the first BOOK (is_music=false)
-    // Since listening_progress doesn't have is_music, we fetch multiple and filter
+    // Get recent incomplete items - we need to find the first BOOK (content_type=audiobook|podcast)
+    // Since listening_progress doesn't have content_type, we fetch multiple and filter
     final progressResponse = await Supabase.instance.client
         .from('listening_progress')
         .select('audiobook_id, completion_percentage, last_played_at, position_seconds, current_chapter_index, total_listen_time_seconds')
@@ -311,11 +307,10 @@ final continueListeningProvider = FutureProvider.autoDispose<Map<String, dynamic
     // Single query for all audiobooks
     final audiobooksResponse = await Supabase.instance.client
         .from('audiobooks')
-        .select('id, title_fa, title_en, cover_url, is_music, is_free, total_duration_seconds, author_fa, status, book_metadata(narrator_name)')
+        .select('id, title_fa, title_en, cover_url, content_type, is_free, total_duration_seconds, author_fa, status, book_metadata(narrator_name)')
         .inFilter('id', audiobookIds)
         .eq('status', 'approved')
-        .eq('is_music', false) // FILTER: Books only
-        .eq('is_article', false); // Exclude articles
+        .inFilter('content_type', ['audiobook', 'podcast']); // FILTER: Books section only
 
     if ((audiobooksResponse as List).isEmpty) {
       AppLogger.d('HOME CONTINUE: No incomplete books found');
@@ -348,12 +343,12 @@ final continueListeningProvider = FutureProvider.autoDispose<Map<String, dynamic
         (chaptersResponse as List).map((c) => Map<String, dynamic>.from(c as Map)),
       );
 
-      AppLogger.d('HOME CONTINUE: Loaded book "${audiobook['title_fa']}" (is_music=false)');
+      AppLogger.d('HOME CONTINUE: Loaded book "${audiobook['title_fa']}" (content_type=audiobook|podcast)');
       return audiobook;
     }
 
     // No incomplete books found
-    AppLogger.d('HOME CONTINUE: No incomplete books found (is_music=false)');
+    AppLogger.d('HOME CONTINUE: No incomplete books found (content_type=audiobook|podcast)');
     return null;
   } catch (e) {
     AppLogger.e('Error fetching continue listening book', error: e);
@@ -390,11 +385,10 @@ final continueListeningAllProvider =
     final audiobooksResponse = await Supabase.instance.client
         .from('audiobooks')
         .select(
-            'id, title_fa, title_en, cover_url, is_music, is_free, total_duration_seconds, author_fa, status, book_metadata(narrator_name)')
+            'id, title_fa, title_en, cover_url, content_type, is_free, total_duration_seconds, author_fa, status, book_metadata(narrator_name)')
         .inFilter('id', audiobookIds)
         .eq('status', 'approved')
-        .eq('is_music', false)
-        .eq('is_article', false);
+        .inFilter('content_type', ['audiobook', 'podcast']); // Books section only
 
     if ((audiobooksResponse as List).isEmpty) return [];
 
@@ -438,7 +432,7 @@ final continueListeningAllProvider =
 });
 
 /// Provider for recently played BOOKS (up to 3, excluding the continue listening book)
-/// FILTER: Only shows books (is_music=false), not music
+/// FILTER: Only shows books (content_type=audiobook|podcast), not music
 /// The exclusion logic excludes the first incomplete book (shown in continueListening)
 /// NOTE: Invalidated by AudioProvider after progress save for immediate update
 final homeRecentlyPlayedProvider = FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
@@ -460,18 +454,17 @@ final homeRecentlyPlayedProvider = FutureProvider.autoDispose<List<Map<String, d
     // Get all audiobook IDs from progress
     final allAudiobookIds = progressResponse.map((p) => p['audiobook_id'] as int).toList();
 
-    // Fetch ONLY BOOKS (is_music=false)
+    // Fetch ONLY BOOKS (content_type=audiobook|podcast)
     final audiobooksResponse = await Supabase.instance.client
         .from('audiobooks')
         .select('''
-          id, title_fa, title_en, cover_url, is_music, is_free,
+          id, title_fa, title_en, cover_url, content_type, is_free,
           total_duration_seconds, author_fa, play_count, status,
           book_metadata(narrator_name)
         ''')
         .inFilter('id', allAudiobookIds)
         .eq('status', 'approved')
-        .eq('is_music', false) // FILTER: Books only
-        .eq('is_article', false); // Exclude articles
+        .inFilter('content_type', ['audiobook', 'podcast']); // FILTER: Books section only
 
     // Create a map for quick lookup (only books)
     final booksMap = <int, Map<String, dynamic>>{};
@@ -509,7 +502,7 @@ final homeRecentlyPlayedProvider = FutureProvider.autoDispose<List<Map<String, d
       result.add(bookWithProgress);
     }
 
-    AppLogger.d('HOME RECENTLY: Loaded ${result.length} book items (is_music=false)');
+    AppLogger.d('HOME RECENTLY: Loaded ${result.length} book items (content_type=audiobook|podcast)');
     return result;
   } catch (e) {
     AppLogger.e('Error fetching recently played books', error: e);
@@ -743,7 +736,7 @@ final listeningStatsProvider = FutureProvider<ListeningStats>((ref) async {
 // ============================================
 // MUSIC PROVIDERS
 // ============================================
-// These providers fetch content where is_music = true
+// These providers fetch content where content_type = 'music'
 // Used by the موسیقی (Music) tab in the bottom navigation
 
 /// Provider for featured music on music screen
@@ -752,13 +745,13 @@ final musicFeaturedProvider = FutureProvider<List<Map<String, dynamic>>>((ref) a
     final response = await Supabase.instance.client
         .from('audiobooks')
         .select('''
-          id, title_fa, title_en, cover_url, is_music, is_free,
+          id, title_fa, title_en, cover_url, content_type, is_free,
           total_duration_seconds, author_fa, play_count, is_featured, status,
           categories(name_fa),
           music_metadata(artist_name, featured_artists)
         ''')
         .eq('status', 'approved')
-        .eq('is_music', true)
+        .eq('content_type', 'music')
         .eq('is_featured', true)
         .order('created_at', ascending: false)
         .limit(10);
@@ -775,13 +768,13 @@ final musicNewReleasesProvider = FutureProvider<List<Map<String, dynamic>>>((ref
     final response = await Supabase.instance.client
         .from('audiobooks')
         .select('''
-          id, title_fa, title_en, cover_url, is_music, is_free,
+          id, title_fa, title_en, cover_url, content_type, is_free,
           total_duration_seconds, author_fa, play_count, status,
           categories(name_fa),
           music_metadata(artist_name, featured_artists)
         ''')
         .eq('status', 'approved')
-        .eq('is_music', true)
+        .eq('content_type', 'music')
         .order('created_at', ascending: false)
         .limit(10);
     return List<Map<String, dynamic>>.from(response);
@@ -798,13 +791,13 @@ final musicPopularProvider = FutureProvider<List<Map<String, dynamic>>>((ref) as
     final response = await Supabase.instance.client
         .from('audiobooks')
         .select('''
-          id, title_fa, title_en, cover_url, is_music, is_free,
+          id, title_fa, title_en, cover_url, content_type, is_free,
           total_duration_seconds, author_fa, play_count, status,
           categories(name_fa),
           music_metadata(artist_name, featured_artists)
         ''')
         .eq('status', 'approved')
-        .eq('is_music', true)
+        .eq('content_type', 'music')
         .order('play_count', ascending: false)
         .order('created_at', ascending: false) // Secondary sort for deterministic results
         .limit(10);
@@ -821,13 +814,13 @@ final musicAllProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async 
     final response = await Supabase.instance.client
         .from('audiobooks')
         .select('''
-          id, title_fa, title_en, cover_url, is_music, is_free,
+          id, title_fa, title_en, cover_url, content_type, is_free,
           total_duration_seconds, author_fa, play_count, status,
           categories(name_fa),
           music_metadata(artist_name, featured_artists)
         ''')
         .eq('status', 'approved')
-        .eq('is_music', true)
+        .eq('content_type', 'music')
         .order('created_at', ascending: false);
     return List<Map<String, dynamic>>.from(response);
   } catch (e) {
@@ -856,7 +849,7 @@ final musicCategoriesForFilterProvider = FutureProvider<List<Map<String, dynamic
 final selectedMusicCategoryProvider = StateProvider<int?>((ref) => null);
 
 /// Provider for "ادامه‌ی شنیدن موسیقی" - recently played music items
-/// Shows music items the user has started listening to (is_music = true)
+/// Shows music items the user has started listening to (content_type = 'music')
 final musicContinueListeningProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
   final user = Supabase.instance.client.auth.currentUser;
   if (user == null) return [];
@@ -877,17 +870,17 @@ final musicContinueListeningProvider = FutureProvider<List<Map<String, dynamic>>
         .map((p) => p['audiobook_id'] as int)
         .toList();
 
-    // Fetch music items only (is_music = true)
+    // Fetch music items only (content_type = 'music')
     final audiobooksResponse = await Supabase.instance.client
         .from('audiobooks')
         .select('''
-          id, title_fa, title_en, cover_url, is_music, is_free,
+          id, title_fa, title_en, cover_url, content_type, is_free,
           total_duration_seconds, author_fa, play_count, status,
           music_metadata(artist_name, featured_artists)
         ''')
         .inFilter('id', audiobookIds)
         .eq('status', 'approved')
-        .eq('is_music', true);
+        .eq('content_type', 'music');
 
     // Create a map for quick lookup
     final audiobooksMap = <int, Map<String, dynamic>>{};
@@ -917,68 +910,50 @@ final musicContinueListeningProvider = FutureProvider<List<Map<String, dynamic>>
 // ============================================
 // PODCAST PROVIDERS
 // ============================================
-// These providers fetch content where is_podcast = true
+// These providers fetch content where content_type = 'podcast'
 // Used by the پادکست‌ها (Podcasts) section on home screen
 
 /// Provider for podcasts on home screen
 /// Shows approved podcasts ordered by creation date
-/// Returns empty list if is_podcast column doesn't exist yet
 final homePodcastsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
   try {
     final response = await Supabase.instance.client
         .from('audiobooks')
         .select('''
-          id, title_fa, title_en, cover_url, is_music, is_podcast, is_free,
+          id, title_fa, title_en, cover_url, content_type, is_free,
           total_duration_seconds, author_fa, play_count, status,
           categories(name_fa),
           book_metadata(narrator_name)
         ''')
         .eq('status', 'approved')
-        .eq('is_podcast', true)
+        .eq('content_type', 'podcast')
         .order('created_at', ascending: false)
         .limit(10);
     return List<Map<String, dynamic>>.from(response);
   } catch (e) {
-    // Return empty list if is_podcast column doesn't exist yet
-    // Note: Supabase may report column as 'is-podcast' (hyphen) in error message
-    final errorStr = e.toString();
-    if (errorStr.contains('is_podcast') || errorStr.contains('is-podcast') ||
-        (e is PostgrestException && (e.code == '42703' || e.code == '400'))) {
-      AppLogger.d('is_podcast column not found, returning empty podcasts list');
-      return [];
-    }
     AppLogger.e('Error fetching podcasts', error: e);
     rethrow;
   }
 });
 
 /// Provider for popular podcasts (by play count)
-/// Returns empty list if is_podcast column doesn't exist yet
 final podcastsPopularProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
   try {
     final response = await Supabase.instance.client
         .from('audiobooks')
         .select('''
-          id, title_fa, title_en, cover_url, is_music, is_podcast, is_free,
+          id, title_fa, title_en, cover_url, content_type, is_free,
           total_duration_seconds, author_fa, play_count, status,
           categories(name_fa),
           book_metadata(narrator_name)
         ''')
         .eq('status', 'approved')
-        .eq('is_podcast', true)
+        .eq('content_type', 'podcast')
         .order('play_count', ascending: false)
         .order('created_at', ascending: false)
         .limit(10);
     return List<Map<String, dynamic>>.from(response);
   } catch (e) {
-    // Return empty list if is_podcast column doesn't exist yet
-    // Note: Supabase may report column as 'is-podcast' (hyphen) in error message
-    final errorStr = e.toString();
-    if (errorStr.contains('is_podcast') || errorStr.contains('is-podcast') ||
-        (e is PostgrestException && (e.code == '42703' || e.code == '400'))) {
-      AppLogger.d('is_podcast column not found, returning empty popular podcasts list');
-      return [];
-    }
     AppLogger.e('Error fetching popular podcasts', error: e);
     rethrow;
   }
@@ -987,63 +962,49 @@ final podcastsPopularProvider = FutureProvider<List<Map<String, dynamic>>>((ref)
 // ============================================
 // ARTICLE PROVIDERS
 // ============================================
-// These providers fetch content where is_article = true
+// These providers fetch content where content_type = 'article'
 // Used by the مقاله‌ها (Articles) section on home screen
 
-/// Provider for articles on home screen (is_article=true)
-/// Returns empty list if is_article column doesn't exist yet
+/// Provider for articles on home screen (content_type='article')
 final homeArticlesProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
   try {
     final response = await Supabase.instance.client
         .from('audiobooks')
         .select('''
-          id, title_fa, title_en, cover_url, is_music, is_article, is_free,
+          id, title_fa, title_en, cover_url, content_type, is_free,
           total_duration_seconds, author_fa, play_count, status,
           categories(name_fa),
           book_metadata(narrator_name)
         ''')
         .eq('status', 'approved')
-        .eq('is_article', true)
+        .eq('content_type', 'article')
         .order('created_at', ascending: false)
         .limit(10);
     return List<Map<String, dynamic>>.from(response);
   } catch (e) {
-    final errorStr = e.toString();
-    if (errorStr.contains('is_article') || errorStr.contains('is-article') ||
-        (e is PostgrestException && (e.code == '42703' || e.code == '400'))) {
-      AppLogger.d('is_article column not found, returning empty articles list');
-      return [];
-    }
     AppLogger.e('Error fetching articles', error: e);
     rethrow;
   }
 });
 
 /// Provider for popular articles (by play count)
-/// Returns empty list if is_article column doesn't exist yet
 final articlesPopularProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
   try {
     final response = await Supabase.instance.client
         .from('audiobooks')
         .select('''
-          id, title_fa, title_en, cover_url, is_music, is_article, is_free,
+          id, title_fa, title_en, cover_url, content_type, is_free,
           total_duration_seconds, author_fa, play_count, status,
           categories(name_fa),
           book_metadata(narrator_name)
         ''')
         .eq('status', 'approved')
-        .eq('is_article', true)
+        .eq('content_type', 'article')
         .order('play_count', ascending: false)
         .order('created_at', ascending: false)
         .limit(10);
     return List<Map<String, dynamic>>.from(response);
   } catch (e) {
-    final errorStr = e.toString();
-    if (errorStr.contains('is_article') || errorStr.contains('is-article') ||
-        (e is PostgrestException && (e.code == '42703' || e.code == '400'))) {
-      AppLogger.d('is_article column not found, returning empty popular articles list');
-      return [];
-    }
     AppLogger.e('Error fetching popular articles', error: e);
     rethrow;
   }
@@ -1060,13 +1021,13 @@ final musicByCategoryProvider = FutureProvider<List<Map<String, dynamic>>>((ref)
       final response = await Supabase.instance.client
           .from('audiobooks')
           .select('''
-            id, title_fa, title_en, cover_url, is_music, is_free,
+            id, title_fa, title_en, cover_url, content_type, is_free,
             total_duration_seconds, author_fa, play_count, status,
             categories(name_fa),
             music_metadata(artist_name, featured_artists)
           ''')
           .eq('status', 'approved')
-          .eq('is_music', true)
+          .eq('content_type', 'music')
           .order('created_at', ascending: false);
       return List<Map<String, dynamic>>.from(response);
     }
@@ -1090,13 +1051,13 @@ final musicByCategoryProvider = FutureProvider<List<Map<String, dynamic>>>((ref)
     final response = await Supabase.instance.client
         .from('audiobooks')
         .select('''
-          id, title_fa, title_en, cover_url, is_music, is_free,
+          id, title_fa, title_en, cover_url, content_type, is_free,
           total_duration_seconds, author_fa, play_count, status,
           categories(name_fa),
           music_metadata(artist_name, featured_artists)
         ''')
         .eq('status', 'approved')
-        .eq('is_music', true)
+        .eq('content_type', 'music')
         .inFilter('id', audiobookIds)
         .order('created_at', ascending: false);
 
@@ -1114,14 +1075,12 @@ final musicByCategoryProvider = FutureProvider<List<Map<String, dynamic>>>((ref)
 
 /// Provider for mixed popular content (books, music, podcasts combined)
 /// Used by search screen "پیشنهاد برای شما" section
-/// Falls back to query without is_podcast if column doesn't exist
 final searchRecommendedProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
   try {
-    // Try with is_podcast column first
     final response = await Supabase.instance.client
         .from('audiobooks')
         .select('''
-          id, title_fa, title_en, cover_url, is_music, is_podcast, is_free,
+          id, title_fa, title_en, cover_url, content_type, is_free,
           total_duration_seconds, author_fa, play_count, status,
           categories(name_fa),
           book_metadata(narrator_name),
@@ -1133,27 +1092,6 @@ final searchRecommendedProvider = FutureProvider<List<Map<String, dynamic>>>((re
         .limit(20);
     return List<Map<String, dynamic>>.from(response);
   } catch (e) {
-    // Fallback: if is_podcast column doesn't exist, query without it
-    // Note: Supabase may report column as 'is-podcast' (hyphen) in error message
-    final errorStr = e.toString();
-    if (errorStr.contains('is_podcast') || errorStr.contains('is-podcast') ||
-        (e is PostgrestException && (e.code == '42703' || e.code == '400'))) {
-      AppLogger.d('is_podcast column not found, using fallback query');
-      final response = await Supabase.instance.client
-          .from('audiobooks')
-          .select('''
-            id, title_fa, title_en, cover_url, is_music, is_free,
-            total_duration_seconds, author_fa, play_count, status,
-            categories(name_fa),
-            book_metadata(narrator_name),
-            music_metadata(artist_name)
-          ''')
-          .eq('status', 'approved')
-          .order('play_count', ascending: false)
-          .order('created_at', ascending: false)
-          .limit(20);
-      return List<Map<String, dynamic>>.from(response);
-    }
     AppLogger.e('Error fetching search recommendations', error: e);
     rethrow;
   }
@@ -1161,14 +1099,12 @@ final searchRecommendedProvider = FutureProvider<List<Map<String, dynamic>>>((re
 
 /// Provider for mixed new releases (books, music, podcasts combined)
 /// Used by search screen "انتخاب ما" section
-/// Falls back to query without is_podcast if column doesn't exist
 final searchPickedForYouProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
   try {
-    // Try with is_podcast column first
     final response = await Supabase.instance.client
         .from('audiobooks')
         .select('''
-          id, title_fa, title_en, cover_url, is_music, is_podcast, is_free,
+          id, title_fa, title_en, cover_url, content_type, is_free,
           total_duration_seconds, author_fa, play_count, status,
           categories(name_fa),
           book_metadata(narrator_name),
@@ -1179,26 +1115,6 @@ final searchPickedForYouProvider = FutureProvider<List<Map<String, dynamic>>>((r
         .limit(15);
     return List<Map<String, dynamic>>.from(response);
   } catch (e) {
-    // Fallback: if is_podcast column doesn't exist, query without it
-    // Note: Supabase may report column as 'is-podcast' (hyphen) in error message
-    final errorStr = e.toString();
-    if (errorStr.contains('is_podcast') || errorStr.contains('is-podcast') ||
-        (e is PostgrestException && (e.code == '42703' || e.code == '400'))) {
-      AppLogger.d('is_podcast column not found, using fallback query');
-      final response = await Supabase.instance.client
-          .from('audiobooks')
-          .select('''
-            id, title_fa, title_en, cover_url, is_music, is_free,
-            total_duration_seconds, author_fa, play_count, status,
-            categories(name_fa),
-            book_metadata(narrator_name),
-            music_metadata(artist_name)
-          ''')
-          .eq('status', 'approved')
-          .order('created_at', ascending: false)
-          .limit(15);
-      return List<Map<String, dynamic>>.from(response);
-    }
     AppLogger.e('Error fetching picked for you', error: e);
     rethrow;
   }

@@ -71,8 +71,14 @@ class SearchResult {
   String get typeLabel {
     switch (type) {
       case SearchResultType.audiobook:
-        final isMusic = metadata['is_music'] as bool? ?? false;
-        return isMusic ? 'موسیقی' : 'کتاب صوتی';
+        final ct = metadata['content_type'] as String? ?? 'audiobook';
+        return switch (ct) {
+          'music' => 'موسیقی',
+          'podcast' => 'پادکست',
+          'article' => 'مقاله',
+          'ebook' => 'ایبوک',
+          _ => 'کتاب صوتی',
+        };
       case SearchResultType.user:
         return 'کاربر';
       case SearchResultType.creator:

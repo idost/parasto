@@ -42,7 +42,7 @@ class SchedulingService {
           'notes': notes,
           'created_by': _supabase.auth.currentUser?.id,
         })
-        .select('*, audiobooks(id, title_fa, cover_url, is_music)')
+        .select('*, audiobooks(id, title_fa, cover_url, content_type)')
         .single();
 
     return ScheduledFeature.fromJson(response);
@@ -59,7 +59,7 @@ class SchedulingService {
   }) async {
     var query = _supabase
         .from('scheduled_features')
-        .select('*, audiobooks(id, title_fa, cover_url, is_music)');
+        .select('*, audiobooks(id, title_fa, cover_url, content_type)');
 
     if (status != null) {
       query = query.eq('status', status.name);
@@ -85,7 +85,7 @@ class SchedulingService {
   static Future<List<ScheduledFeature>> getAudiobookSchedules(int audiobookId) async {
     final response = await _supabase
         .from('scheduled_features')
-        .select('*, audiobooks(id, title_fa, cover_url, is_music)')
+        .select('*, audiobooks(id, title_fa, cover_url, content_type)')
         .eq('audiobook_id', audiobookId)
         .order('start_date', ascending: false);
 
@@ -96,7 +96,7 @@ class SchedulingService {
   static Future<List<ScheduledFeature>> getActiveAndUpcoming({int limit = 20}) async {
     final response = await _supabase
         .from('scheduled_features')
-        .select('*, audiobooks(id, title_fa, cover_url, is_music)')
+        .select('*, audiobooks(id, title_fa, cover_url, content_type)')
         .inFilter('status', ['scheduled', 'active'])
         .order('start_date')
         .limit(limit);
@@ -129,7 +129,7 @@ class SchedulingService {
         .from('scheduled_features')
         .update(updates)
         .eq('id', scheduleId)
-        .select('*, audiobooks(id, title_fa, cover_url, is_music)')
+        .select('*, audiobooks(id, title_fa, cover_url, content_type)')
         .single();
 
     return ScheduledFeature.fromJson(response);

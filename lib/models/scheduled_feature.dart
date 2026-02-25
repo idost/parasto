@@ -31,7 +31,10 @@ class ScheduledFeature {
   // Joined audiobook data (optional)
   final String? audiobookTitle;
   final String? audiobookCoverUrl;
-  final bool? isMusic;
+  final String? contentType;
+
+  // Backward compat — removed in Phase 3b
+  bool? get isMusic => contentType != null ? contentType == 'music' : null;
 
   const ScheduledFeature({
     required this.id,
@@ -47,7 +50,7 @@ class ScheduledFeature {
     this.notes,
     this.audiobookTitle,
     this.audiobookCoverUrl,
-    this.isMusic,
+    this.contentType,
   });
 
   factory ScheduledFeature.fromJson(Map<String, dynamic> json) {
@@ -72,7 +75,7 @@ class ScheduledFeature {
       notes: json['notes'] as String?,
       audiobookTitle: audiobook?['title_fa'] as String?,
       audiobookCoverUrl: audiobook?['cover_url'] as String?,
-      isMusic: audiobook?['is_music'] as bool?,
+      contentType: audiobook?['content_type'] as String?,
     );
   }
 
@@ -115,7 +118,7 @@ class ScheduledFeature {
       notes: notes ?? this.notes,
       audiobookTitle: audiobookTitle,
       audiobookCoverUrl: audiobookCoverUrl,
-      isMusic: isMusic,
+      contentType: contentType,
     );
   }
 

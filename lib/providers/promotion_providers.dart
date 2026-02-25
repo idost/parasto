@@ -81,7 +81,7 @@ final homeShelvesProvider = FutureProvider<List<Map<String, dynamic>>>((ref) asy
         .select('''
           shelf_id, audiobook_id, sort_order,
           audiobooks(
-            id, title_fa, title_en, cover_url, is_music, is_free, is_parasto_brand,
+            id, title_fa, title_en, cover_url, content_type, is_free, is_parasto_brand,
             author_fa, author_en, play_count, avg_rating, price_toman,
             book_metadata(narrator_name),
             music_metadata(artist_name, featured_artists)
@@ -142,7 +142,7 @@ final shelfDetailProvider = FutureProvider.family<Map<String, dynamic>?, int>((r
         .select('''
           audiobook_id, sort_order,
           audiobooks(
-            id, title_fa, title_en, cover_url, is_music, is_free, is_parasto_brand,
+            id, title_fa, title_en, cover_url, content_type, is_free, is_parasto_brand,
             author_fa, author_en, play_count, avg_rating, price_toman,
             book_metadata(narrator_name),
             music_metadata(artist_name, featured_artists)

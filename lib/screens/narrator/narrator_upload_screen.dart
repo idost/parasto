@@ -268,7 +268,7 @@ class _NarratorUploadScreenState extends ConsumerState<NarratorUploadScreen> {
         final creatorService = CreatorService();
         await creatorService.syncCreatorsForAudiobook(
           audiobookId: audiobookId,
-          isMusic: false, // Narrators can only upload books
+          contentType: 'audiobook', // Narrators can only upload books
           authorName: _authorFaController.text,
           authorNameEn: _authorEnController.text,
           translatorName: _translatorFaController.text,

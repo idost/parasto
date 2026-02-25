@@ -142,10 +142,10 @@ class CreatorService {
   /// Get all works (audiobooks and music) for a creator.
   ///
   /// Returns a list of audiobooks where this creator has a role, including:
-  /// - Basic audiobook fields for display (id, title_fa, title_en, cover_url, is_music, is_free)
+  /// - Basic audiobook fields for display (id, title_fa, title_en, cover_url, content_type, is_free)
   /// - role: The creator's role for each work
   ///
-  /// Results are grouped by is_music (books first, then music).
+  /// Results are grouped by content_type (books first, then music).
   /// Returns empty list on error (never throws).
   Future<List<Map<String, dynamic>>> getWorksForCreator(
     String creatorId,
@@ -162,7 +162,7 @@ class CreatorService {
               title_fa,
               title_en,
               cover_url,
-              is_music,
+              content_type,
               is_free,
               status,
               total_duration_seconds,
@@ -184,10 +184,10 @@ class CreatorService {
         }
       }
 
-      // Sort: books first (is_music = false), then music (is_music = true)
+      // Sort: books first (content_type != 'music'), then music (content_type == 'music')
       result.sort((a, b) {
-        final aIsMusic = a['is_music'] == true ? 1 : 0;
-        final bIsMusic = b['is_music'] == true ? 1 : 0;
+        final aIsMusic = a['content_type'] == 'music' ? 1 : 0;
+        final bIsMusic = b['content_type'] == 'music' ? 1 : 0;
         return aIsMusic.compareTo(bIsMusic);
       });
 
@@ -316,7 +316,7 @@ class CreatorService {
   /// Returns true on success, false on error.
   Future<bool> syncCreatorsForAudiobook({
     required int audiobookId,
-    required bool isMusic,
+    required String contentType,
     // Book metadata fields
     String? authorName,
     String? authorNameEn,
@@ -337,7 +337,7 @@ class CreatorService {
     String? labelNameEn,
   }) async {
     try {
-      AppLogger.d('CreatorService: syncCreatorsForAudiobook $audiobookId (isMusic: $isMusic)');
+      AppLogger.d('CreatorService: syncCreatorsForAudiobook $audiobookId (contentType: $contentType)');
 
       // Step 1: Delete all existing creator links for this audiobook
       await _client
@@ -350,7 +350,7 @@ class CreatorService {
       // Step 2: Build list of (name, nameEn, role) to process
       final List<_CreatorEntry> entries = [];
 
-      if (isMusic) {
+      if (contentType == 'music') {
         // Music: singer, composer, lyricist, label
         if (artistName != null && normalizeName(artistName).isNotEmpty) {
           entries.add(_CreatorEntry(artistName, artistNameEn, 'singer'));

@@ -9,8 +9,13 @@ extension SearchResultPresentation on SearchResult {
   IconData get icon {
     switch (type) {
       case SearchResultType.audiobook:
-        final isMusic = metadata['is_music'] as bool? ?? false;
-        return isMusic ? Icons.music_note_rounded : Icons.menu_book_rounded;
+        return switch (metadata['content_type'] as String? ?? 'audiobook') {
+          'music' => Icons.music_note_rounded,
+          'podcast' => Icons.podcasts_rounded,
+          'article' => Icons.article_rounded,
+          'ebook' => Icons.auto_stories_rounded,
+          _ => Icons.menu_book_rounded,
+        };
       case SearchResultType.user:
         return Icons.person_rounded;
       case SearchResultType.creator:
@@ -24,8 +29,12 @@ extension SearchResultPresentation on SearchResult {
   Color get color {
     switch (type) {
       case SearchResultType.audiobook:
-        final isMusic = metadata['is_music'] as bool? ?? false;
-        return isMusic ? AppColors.secondary : AppColors.primary;
+        return switch (metadata['content_type'] as String? ?? 'audiobook') {
+          'music' => AppColors.secondary,
+          'podcast' => AppColors.info,
+          'ebook' => const Color(0xFF10B981), // Emerald
+          _ => AppColors.primary,
+        };
       case SearchResultType.user:
         return AppColors.info;
       case SearchResultType.creator:

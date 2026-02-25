@@ -309,7 +309,7 @@ class ExportTemplate {
       'id': 'شناسه',
       'title_fa': 'عنوان فارسی',
       'title_en': 'عنوان انگلیسی',
-      'is_music': 'نوع',
+      'content_type': 'نوع',
       'status': 'وضعیت',
       'category_name': 'دسته‌بندی',
       'narrator_name': 'گوینده',

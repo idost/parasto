@@ -16,7 +16,7 @@ class AnalyticsService {
       // Fetch listening sessions with audiobook info for filtering
       final response = await _supabase
           .from('listening_sessions')
-          .select('user_id, audiobook_id, duration_seconds, audiobooks!inner(is_music)')
+          .select('user_id, audiobook_id, duration_seconds, audiobooks!inner(content_type)')
           .gte('session_date', range.startDateString)
           .lte('session_date', range.endDateString);
 
@@ -27,9 +27,9 @@ class AnalyticsService {
       for (final row in response) {
         // Filter by content type if specified
         if (contentType != null) {
-          final isMusic = row['audiobooks']['is_music'] as bool? ?? false;
-          if (contentType == 'music' && !isMusic) continue;
-          if (contentType == 'book' && isMusic) continue;
+          final rowContentType = row['audiobooks']['content_type'] as String? ?? 'audiobook';
+          if (contentType == 'music' && rowContentType != 'music') continue;
+          if (contentType == 'book' && rowContentType == 'music') continue;
         }
 
         totalSeconds += (row['duration_seconds'] as num?)?.toInt() ?? 0;
@@ -56,7 +56,7 @@ class AnalyticsService {
     try {
       final response = await _supabase
           .from('listening_sessions')
-          .select('session_date, duration_seconds, audiobooks!inner(is_music)')
+          .select('session_date, duration_seconds, audiobooks!inner(content_type)')
           .gte('session_date', range.startDateString)
           .lte('session_date', range.endDateString);
 
@@ -65,9 +65,9 @@ class AnalyticsService {
       for (final row in response) {
         // Filter by content type if specified
         if (contentType != null) {
-          final isMusic = row['audiobooks']['is_music'] as bool? ?? false;
-          if (contentType == 'music' && !isMusic) continue;
-          if (contentType == 'book' && isMusic) continue;
+          final rowContentType = row['audiobooks']['content_type'] as String? ?? 'audiobook';
+          if (contentType == 'music' && rowContentType != 'music') continue;
+          if (contentType == 'book' && rowContentType == 'music') continue;
         }
 
         final date = row['session_date'] as String;
@@ -127,17 +127,17 @@ class AnalyticsService {
       // Fetch audiobook details
       final audiobooks = await _supabase
           .from('audiobooks')
-          .select('id, title_fa, cover_url, is_music, avg_rating, purchase_count, price_toman')
+          .select('id, title_fa, cover_url, content_type, avg_rating, purchase_count, price_toman')
           .inFilter('id', ids);
 
       // Map to ContentRanking with content type filter
       final rankings = <ContentRanking>[];
       for (final a in audiobooks) {
-        final isMusic = a['is_music'] as bool? ?? false;
+        final rowContentType = a['content_type'] as String? ?? 'audiobook';
 
         // Filter by content type
-        if (contentType == 'music' && !isMusic) continue;
-        if (contentType == 'book' && isMusic) continue;
+        if (contentType == 'music' && rowContentType != 'music') continue;
+        if (contentType == 'book' && rowContentType == 'music') continue;
 
         final id = a['id'] as int;
         final purchaseCount = (a['purchase_count'] as num?)?.toInt() ?? 0;
@@ -147,7 +147,7 @@ class AnalyticsService {
           audiobookId: id,
           title: a['title_fa'] as String? ?? '',
           coverUrl: a['cover_url'] as String?,
-          isMusic: isMusic,
+          contentType: rowContentType,
           totalSeconds: totals[id] ?? 0,
           uniqueListeners: listeners[id]?.length ?? 0,
           avgRating: (a['avg_rating'] as num?)?.toDouble() ?? 0,
@@ -173,7 +173,7 @@ class AnalyticsService {
     try {
       final response = await _supabase
           .from('purchases')
-          .select('amount, user_id, audiobook_id, audiobooks!inner(is_music)')
+          .select('amount, user_id, audiobook_id, audiobooks!inner(content_type)')
           .eq('status', 'completed')
           .gte('created_at', range.start.toIso8601String())
           .lte('created_at', range.end.toIso8601String());
@@ -185,9 +185,9 @@ class AnalyticsService {
       for (final row in response) {
         // Filter by content type if specified
         if (contentType != null) {
-          final isMusic = row['audiobooks']['is_music'] as bool? ?? false;
-          if (contentType == 'music' && !isMusic) continue;
-          if (contentType == 'book' && isMusic) continue;
+          final rowContentType = row['audiobooks']['content_type'] as String? ?? 'audiobook';
+          if (contentType == 'music' && rowContentType != 'music') continue;
+          if (contentType == 'book' && rowContentType == 'music') continue;
         }
 
         revenue += (row['amount'] as num?)?.toDouble() ?? 0;
@@ -292,7 +292,7 @@ class AnalyticsService {
       // Get creator-audiobook mappings
       final creatorLinks = await _supabase
           .from('audiobook_creators')
-          .select('creator_id, audiobook_id, creators(id, name_fa, type), audiobooks(is_music)')
+          .select('creator_id, audiobook_id, creators(id, name_fa, type), audiobooks(content_type)')
           .inFilter('audiobook_id', audiobookTotals.keys.toList());
 
       // Aggregate by creator
@@ -300,9 +300,9 @@ class AnalyticsService {
       for (final link in creatorLinks) {
         // Filter by content type if specified
         if (contentType != null) {
-          final isMusic = link['audiobooks']?['is_music'] as bool? ?? false;
-          if (contentType == 'music' && !isMusic) continue;
-          if (contentType == 'book' && isMusic) continue;
+          final rowContentType = link['audiobooks']?['content_type'] as String? ?? 'audiobook';
+          if (contentType == 'music' && rowContentType != 'music') continue;
+          if (contentType == 'book' && rowContentType == 'music') continue;
         }
 
         final creator = link['creators'] as Map<String, dynamic>?;

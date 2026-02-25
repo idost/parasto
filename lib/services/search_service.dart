@@ -81,7 +81,7 @@ class SearchService {
             title_en,
             description_fa,
             cover_url,
-            is_music,
+            content_type,
             is_free,
             category_id,
             play_count,
@@ -95,11 +95,11 @@ class SearchService {
 
       // Apply content type filter
       if (contentType == 'book') {
-        queryBuilder = queryBuilder.eq('is_music', false).eq('is_article', false);
+        queryBuilder = queryBuilder.eq('content_type', 'audiobook');
       } else if (contentType == 'music') {
-        queryBuilder = queryBuilder.eq('is_music', true);
+        queryBuilder = queryBuilder.eq('content_type', 'music');
       } else if (contentType == 'article') {
-        queryBuilder = queryBuilder.eq('is_article', true);
+        queryBuilder = queryBuilder.eq('content_type', 'article');
       }
 
       // Apply category filter
@@ -130,7 +130,7 @@ class SearchService {
           'title_en': row['title_en'],
           'description_fa': row['description_fa'],
           'cover_url': row['cover_url'],
-          'is_music': row['is_music'],
+          'content_type': row['content_type'],
           'is_free': row['is_free'],
           'category_id': row['category_id'],
           'category_name': categoryData?['name_fa'],
@@ -254,7 +254,7 @@ class SearchService {
     try {
       final response = await _supabase
           .from('audiobooks')
-          .select('id, title_fa, title_en, cover_url, is_music, status, created_at')
+          .select('id, title_fa, title_en, cover_url, content_type, status, created_at')
           .or('title_fa.ilike.%$query%,title_en.ilike.%$query%')
           .order('created_at', ascending: false)
           .limit(limit);
@@ -267,7 +267,7 @@ class SearchService {
           subtitle: row['title_en'] as String?,
           imageUrl: row['cover_url'] as String?,
           metadata: {
-            'is_music': row['is_music'] as bool? ?? false,
+            'content_type': row['content_type'] as String? ?? 'audiobook',
             'status': row['status'] as String?,
           },
           createdAt: DateTime.parse(row['created_at'] as String),

@@ -201,8 +201,8 @@ class QualityCheckService {
         missingFields.add('دسته‌بندی');
       }
 
-      // Check narrator for books
-      if (audiobook['is_music'] != true) {
+      // Check narrator for books (non-music content)
+      if (audiobook['content_type'] != 'music') {
         final bookMeta = audiobook['book_metadata'];
         if (bookMeta == null ||
             bookMeta['narrator_name'] == null ||

@@ -20,10 +20,15 @@ class Audiobook {
   final int priceToman;
   final bool isFree;
   final bool isFeatured;
-  final bool isMusic;
-  final bool isPodcast;
-  final bool isArticle;
+  final String contentType;
   final bool isParastoBrand;
+
+  // Derived from contentType — backward compat getters
+  bool get isMusic => contentType == 'music';
+  bool get isPodcast => contentType == 'podcast';
+  bool get isArticle => contentType == 'article';
+  bool get isEbook => contentType == 'ebook';
+  bool get isAudiobook => contentType == 'audiobook';
   final String status;
   final int totalDurationSeconds;
   final int chapterCount;
@@ -46,9 +51,7 @@ class Audiobook {
     required this.priceToman,
     required this.isFree,
     required this.isFeatured,
-    this.isMusic = false,
-    this.isPodcast = false,
-    this.isArticle = false,
+    this.contentType = 'audiobook',
     this.isParastoBrand = false,
     required this.status,
     required this.totalDurationSeconds,
@@ -83,9 +86,7 @@ class Audiobook {
       priceToman: (json['price_toman'] as int?) ?? 0,
       isFree: (json['is_free'] as bool?) ?? false,
       isFeatured: (json['is_featured'] as bool?) ?? false,
-      isMusic: (json['is_music'] as bool?) ?? false,
-      isPodcast: (json['is_podcast'] as bool?) ?? false,
-      isArticle: (json['is_article'] as bool?) ?? false,
+      contentType: (json['content_type'] as String?) ?? 'audiobook',
       isParastoBrand: (json['is_parasto_brand'] as bool?) ?? false,
       status: (json['status'] as String?) ?? 'draft',
       totalDurationSeconds: (json['total_duration_seconds'] as int?) ?? 0,
@@ -111,9 +112,10 @@ class Audiobook {
     'price_toman': priceToman,
     'is_free': isFree,
     'is_featured': isFeatured,
-    'is_music': isMusic,
-    'is_podcast': isPodcast,
-    'is_article': isArticle,
+    'content_type': contentType,
+    'is_music': isMusic,       // backward compat — derived from contentType
+    'is_podcast': isPodcast,   // backward compat — derived from contentType
+    'is_article': isArticle,   // backward compat — derived from contentType
     'is_parasto_brand': isParastoBrand,
     'status': status,
     'total_duration_seconds': totalDurationSeconds,
@@ -125,14 +127,6 @@ class Audiobook {
     'created_at': createdAt.toIso8601String(),
     if (categoryName != null) 'categories': {'name_fa': categoryName, 'id': categoryId},
   };
-
-  /// Content type for display.
-  String get contentType {
-    if (isMusic) return 'music';
-    if (isPodcast) return 'podcast';
-    if (isArticle) return 'article';
-    return 'audiobook';
-  }
 
   /// Formatted price string.
   String get formattedPrice {

@@ -149,10 +149,10 @@ class AdminUnicefReportService {
   /// Returns counts for audiobooks, music, podcasts, and ebooks
   static Future<Map<String, int>> _getContentLibraryCounts() async {
     try {
-      // Query audiobooks for different content types
+      // Query audiobooks for different content types using content_type column
       final audiobooksResponse = await _supabase
           .from('audiobooks')
-          .select('is_music, is_podcast')
+          .select('content_type')
           .eq('status', 'approved');
 
       int audiobooks = 0;
@@ -160,12 +160,11 @@ class AdminUnicefReportService {
       int podcasts = 0;
 
       for (final row in audiobooksResponse) {
-        final isMusic = row['is_music'] as bool? ?? false;
-        final isPodcast = row['is_podcast'] as bool? ?? false;
+        final contentType = row['content_type'] as String? ?? 'audiobook';
 
-        if (isPodcast) {
+        if (contentType == 'podcast') {
           podcasts++;
-        } else if (isMusic) {
+        } else if (contentType == 'music') {
           music++;
         } else {
           audiobooks++;

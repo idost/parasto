@@ -117,7 +117,7 @@ class ContentRanking {
   final int audiobookId;
   final String title;
   final String? coverUrl;
-  final bool isMusic;
+  final String contentType;
   final int totalSeconds;
   final int uniqueListeners;
   final double avgRating;
@@ -128,7 +128,7 @@ class ContentRanking {
     required this.audiobookId,
     required this.title,
     this.coverUrl,
-    required this.isMusic,
+    required this.contentType,
     required this.totalSeconds,
     required this.uniqueListeners,
     required this.avgRating,
@@ -136,11 +136,27 @@ class ContentRanking {
     required this.revenue,
   });
 
+  /// Backward compatibility getter
+  bool get isMusic => contentType == 'music';
+
   /// Total hours listened
   double get totalHours => totalSeconds / 3600;
 
   /// Content type label in Farsi
-  String get typeLabel => isMusic ? 'موسیقی' : 'کتاب';
+  String get typeLabel {
+    switch (contentType) {
+      case 'music':
+        return 'موسیقی';
+      case 'podcast':
+        return 'پادکست';
+      case 'article':
+        return 'مقاله';
+      case 'ebook':
+        return 'کتاب الکترونیکی';
+      default:
+        return 'کتاب';
+    }
+  }
 }
 
 /// Creator ranking for top creators

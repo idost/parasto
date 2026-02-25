@@ -144,7 +144,7 @@ class Audiobook {
       descriptionFa: json['description_fa'] as String?,
       narratorId: json['narrator_id'].toString(),
       // Get narrator/artist from correct metadata table (not profiles which is the uploader account)
-      narratorName: (json['is_music'] == true)
+      narratorName: (json['content_type'] == 'music')
           ? ((json['music_metadata'] as Map<String, dynamic>?)?['artist_name'] as String?)
           : ((json['book_metadata'] as Map<String, dynamic>?)?['narrator_name'] as String?) ??
             (json['narrator_name'] as String?),

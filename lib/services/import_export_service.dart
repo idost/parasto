@@ -244,7 +244,7 @@ class ImportExportService {
       id,
       title_fa,
       title_en,
-      is_music,
+      content_type,
       status,
       is_featured,
       price_toman,
@@ -260,8 +260,8 @@ class ImportExportService {
       if (filters['status'] != null) {
         query = query.eq('status', filters['status'] as Object);
       }
-      if (filters['is_music'] != null) {
-        query = query.eq('is_music', filters['is_music'] as Object);
+      if (filters['content_type'] != null) {
+        query = query.eq('content_type', filters['content_type'] as Object);
       }
       if (filters['category_id'] != null) {
         query = query.eq('category_id', filters['category_id'] as Object);
@@ -274,7 +274,7 @@ class ImportExportService {
       'id': row['id'],
       'title_fa': row['title_fa'],
       'title_en': row['title_en'],
-      'is_music': row['is_music'] == true ? 'موسیقی' : 'کتاب صوتی',
+      'content_type': _contentTypeLabel(row['content_type'] as String? ?? 'audiobook'),
       'status': row['status'],
       'category_name': row['categories']?['name'],
       'narrator_name': row['book_metadata']?['narrator_name'],
@@ -363,6 +363,22 @@ class ImportExportService {
   // ============================================================================
   // HELPERS
   // ============================================================================
+
+  /// Get Farsi label for content type
+  static String _contentTypeLabel(String contentType) {
+    switch (contentType) {
+      case 'music':
+        return 'موسیقی';
+      case 'podcast':
+        return 'پادکست';
+      case 'article':
+        return 'مقاله';
+      case 'ebook':
+        return 'کتاب الکترونیکی';
+      default:
+        return 'کتاب صوتی';
+    }
+  }
 
   static String _typeToString(ImportExportType type) {
     switch (type) {

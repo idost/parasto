@@ -65,7 +65,7 @@ class UserAnalyticsService {
     try {
       final response = await _client
           .from('listening_sessions')
-          .select('session_date, duration_seconds, audiobooks(id, title_fa, cover_url, is_music)')
+          .select('session_date, duration_seconds, audiobooks(id, title_fa, cover_url, content_type)')
           .eq('user_id', userId)
           .order('session_date', ascending: false)
           .limit(limit);
@@ -78,7 +78,7 @@ class UserAnalyticsService {
           audiobookId: audiobook?['id'] as int?,
           audiobookTitle: audiobook?['title_fa'] as String?,
           coverUrl: audiobook?['cover_url'] as String?,
-          isMusic: audiobook?['is_music'] as bool? ?? false,
+          contentType: audiobook?['content_type'] as String? ?? 'audiobook',
         );
       }).toList();
     } catch (e) {
@@ -93,7 +93,7 @@ class UserAnalyticsService {
       // Get audiobooks created by this narrator
       final audiobooksResponse = await _client
           .from('audiobooks')
-          .select('id, title_fa, status, play_count, purchase_count, avg_rating, price_toman, is_free, is_music')
+          .select('id, title_fa, status, play_count, purchase_count, avg_rating, price_toman, is_free, content_type')
           .eq('narrator_id', userId);
 
       int totalBooks = 0;
@@ -107,7 +107,7 @@ class UserAnalyticsService {
       int ratingCount = 0;
 
       for (final book in audiobooksResponse) {
-        if (book['is_music'] == true) {
+        if (book['content_type'] == 'music') {
           totalMusic++;
         } else {
           totalBooks++;
@@ -169,7 +169,7 @@ class UserAnalyticsService {
     try {
       final response = await _client
           .from('audiobooks')
-          .select('id, title_fa, cover_url, is_music, play_count, purchase_count, avg_rating')
+          .select('id, title_fa, cover_url, content_type, play_count, purchase_count, avg_rating')
           .eq('narrator_id', userId)
           .eq('status', 'approved')
           .order('play_count', ascending: false)
@@ -179,7 +179,7 @@ class UserAnalyticsService {
         audiobookId: row['id'] as int,
         title: row['title_fa'] as String,
         coverUrl: row['cover_url'] as String?,
-        isMusic: row['is_music'] as bool? ?? false,
+        contentType: row['content_type'] as String? ?? 'audiobook',
         playCount: row['play_count'] as int? ?? 0,
         purchaseCount: row['purchase_count'] as int? ?? 0,
         avgRating: (row['avg_rating'] as num?)?.toDouble() ?? 0,
@@ -223,7 +223,7 @@ class UserAnalyticsService {
     try {
       final response = await _client
           .from('entitlements')
-          .select('audiobook_id, granted_at, audiobooks(id, title_fa, cover_url, is_music)')
+          .select('audiobook_id, granted_at, audiobooks(id, title_fa, cover_url, content_type)')
           .eq('user_id', userId)
           .order('granted_at', ascending: false);
 
@@ -233,7 +233,7 @@ class UserAnalyticsService {
           audiobookId: row['audiobook_id'] as int,
           title: audiobook?['title_fa'] as String? ?? '',
           coverUrl: audiobook?['cover_url'] as String?,
-          isMusic: audiobook?['is_music'] as bool? ?? false,
+          contentType: audiobook?['content_type'] as String? ?? 'audiobook',
           grantedAt: DateTime.parse(row['granted_at'] as String),
         );
       }).toList();
@@ -281,7 +281,7 @@ class ListeningActivity {
   final int? audiobookId;
   final String? audiobookTitle;
   final String? coverUrl;
-  final bool isMusic;
+  final String contentType;
 
   ListeningActivity({
     required this.date,
@@ -289,8 +289,11 @@ class ListeningActivity {
     this.audiobookId,
     this.audiobookTitle,
     this.coverUrl,
-    this.isMusic = false,
+    this.contentType = 'audiobook',
   });
+
+  /// Backward compatibility getter
+  bool get isMusic => contentType == 'music';
 
   double get hours => durationSeconds / 3600;
 }
@@ -340,7 +343,7 @@ class ContentPerformance {
   final int audiobookId;
   final String title;
   final String? coverUrl;
-  final bool isMusic;
+  final String contentType;
   final int playCount;
   final int purchaseCount;
   final double avgRating;
@@ -349,11 +352,14 @@ class ContentPerformance {
     required this.audiobookId,
     required this.title,
     this.coverUrl,
-    this.isMusic = false,
+    this.contentType = 'audiobook',
     this.playCount = 0,
     this.purchaseCount = 0,
     this.avgRating = 0,
   });
+
+  /// Backward compatibility getter
+  bool get isMusic => contentType == 'music';
 }
 
 /// Purchase record
@@ -382,14 +388,17 @@ class LibraryItem {
   final int audiobookId;
   final String title;
   final String? coverUrl;
-  final bool isMusic;
+  final String contentType;
   final DateTime grantedAt;
 
   LibraryItem({
     required this.audiobookId,
     required this.title,
     this.coverUrl,
-    this.isMusic = false,
+    this.contentType = 'audiobook',
     required this.grantedAt,
   });
+
+  /// Backward compatibility getter
+  bool get isMusic => contentType == 'music';
 }

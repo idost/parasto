@@ -167,9 +167,9 @@ final newFromFollowedAuthorsProvider =
     // so we'll fetch more and filter client-side
     final response = await Supabase.instance.client
         .from('audiobooks')
-        .select('id, title_fa, title_en, cover_url, author_fa, avg_rating, play_count, created_at, is_music, status')
+        .select('id, title_fa, title_en, cover_url, author_fa, avg_rating, play_count, created_at, content_type, status')
         .eq('status', 'approved')
-        .eq('is_music', false)
+        .eq('content_type', 'audiobook')
         .order('created_at', ascending: false)
         .limit(50); // Fetch more to find matches
 

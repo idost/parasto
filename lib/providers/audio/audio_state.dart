@@ -88,7 +88,7 @@ class AudioState {
   bool get hasAudio => audiobook != null;
   bool get hasError => errorType != AudioErrorType.none;
   bool get hasSleepTimer => sleepTimerMode != SleepTimerMode.off;
-  bool get isMusic => audiobook?['is_music'] == true;
+  bool get isMusic => audiobook?['content_type'] == 'music';
 
   /// True if currently playing from a playlist queue
   bool get isPlaylistActive => playlistId != null && playlistItems.isNotEmpty;

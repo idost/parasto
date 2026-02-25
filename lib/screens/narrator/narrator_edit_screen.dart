@@ -262,7 +262,7 @@ class _NarratorEditScreenState extends ConsumerState<NarratorEditScreen> {
         final creatorService = CreatorService();
         await creatorService.syncCreatorsForAudiobook(
           audiobookId: widget.audiobookId,
-          isMusic: false, // Narrators can only edit books
+          contentType: 'audiobook', // Narrators can only edit books
           authorName: _authorFaController.text,
           authorNameEn: _authorEnController.text,
           translatorName: _translatorFaController.text,
