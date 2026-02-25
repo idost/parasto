@@ -158,7 +158,8 @@ class _ShelfDetailScreenState extends ConsumerState<ShelfDetailScreen> {
     final title = (book['title_fa'] as String?) ?? '';
     final author = (book['author_fa'] as String?) ?? (book['author_en'] as String?) ?? '';
     final isParastoBrand = (book['is_parasto_brand'] as bool?) ?? false;
-    final isMusic = (book['is_music'] as bool?) ?? false;
+    final contentType = (book['content_type'] as String?) ?? 'audiobook';
+    final isMusic = contentType == 'music';
     String narratorRaw = '';
     if (isMusic) {
       final musicMeta = book['music_metadata'] as Map<String, dynamic>?;
@@ -171,6 +172,14 @@ class _ShelfDetailScreenState extends ConsumerState<ShelfDetailScreen> {
     final displayAuthor = author.isNotEmpty ? author : narrator;
     final isFree = book['is_free'] == true;
     final avgRating = (book['avg_rating'] as num?)?.toDouble() ?? 0.0;
+
+    // Choose placeholder icon based on content type
+    final IconData placeholderIcon = switch (contentType) {
+      'music' => Icons.music_note,
+      'podcast' => Icons.podcasts,
+      'article' => Icons.article,
+      _ => Icons.book,
+    };
 
     return Card(
       color: AppColors.surface,
@@ -202,14 +211,14 @@ class _ShelfDetailScreenState extends ConsumerState<ShelfDetailScreen> {
                           fit: BoxFit.cover,
                           errorBuilder: (_, __, ___) => Center(
                             child: Icon(
-                              isMusic ? Icons.music_note : Icons.book,
+                              placeholderIcon,
                               color: AppColors.textTertiary,
                             ),
                           ),
                         )
                       : Center(
                           child: Icon(
-                            isMusic ? Icons.music_note : Icons.book,
+                            placeholderIcon,
                             color: AppColors.textTertiary,
                           ),
                         ),
@@ -353,10 +362,10 @@ class _ShelfDetailScreenState extends ConsumerState<ShelfDetailScreen> {
                             '';
                         // Check if this book is branded as "پرستو"
                         final isParastoBrand = (book['is_parasto_brand'] as bool?) ?? false;
-                        final isMusic = (book['is_music'] as bool?) ?? false;
+                        final contentType = (book['content_type'] as String?) ?? 'audiobook';
                         // Get narrator/artist from correct metadata table (not profiles which is the uploader account)
                         String narratorRaw = '';
-                        if (isMusic) {
+                        if (contentType == 'music') {
                           final musicMeta = book['music_metadata'] as Map<String, dynamic>?;
                           narratorRaw = (musicMeta?['artist_name'] as String?) ?? '';
                         } else {

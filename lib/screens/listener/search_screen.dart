@@ -748,7 +748,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     final author = (item['author_fa'] as String?) ?? '';
     final duration = item['total_duration_seconds'] as int? ?? 0;
     final durationStr = _formatDuration(duration);
-    final isMusic = item['is_music'] == true;
+    final contentType = (item['content_type'] as String?) ?? 'audiobook';
+    final isMusic = contentType == 'music';
     final isFree = item['is_free'] == true;
     final coverUrl = item['cover_url'] as String?;
 
@@ -1010,7 +1011,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
     final isFree = book['is_free'] == true;
     final avgRating = (book['avg_rating'] as num?)?.toDouble() ?? 0.0;
-    final isMusic = book['is_music'] == true;
+    final contentType = (book['content_type'] as String?) ?? 'audiobook';
+    final isMusic = contentType == 'music';
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.cardGap),

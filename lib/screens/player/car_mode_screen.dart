@@ -129,7 +129,7 @@ class _CarModeScreenState extends ConsumerState<CarModeScreen>
         '';
     final chapterTitle = currentChapter?['title'] as String? ?? '';
     final coverUrl = audiobook['cover_url'] as String?;
-    final isMusic = audiobook['is_music'] == true;
+    final isMusic = (audiobook['content_type'] as String?) == 'music';
 
     // Chapter indicator: "فصل ۳ از ۱۲" or "قطعه ۳ از ۱۲"
     final chapterIndicator = chapters.isNotEmpty

@@ -11,11 +11,11 @@ import 'package:myna/utils/farsi_utils.dart';
 /// CATEGORY SYSTEM DESIGN (Book Categories)
 /// =============================================================================
 ///
-/// This screen displays BOOK categories (دسته‌بندی‌ها) for audiobooks (is_music=false).
+/// This screen displays BOOK categories (دسته‌بندی‌ها) for audiobooks (content_type='audiobook').
 /// Music categories (سبک‌های موسیقی) are handled separately via music_categories table.
 ///
 /// COUNT CALCULATION:
-/// - Counts ONLY approved books (status='approved', is_music=false) in each category
+/// - Counts ONLY approved books (status='approved', content_type='audiobook') in each category
 /// - Uses a separate aggregation query for accurate counts
 /// - Does NOT depend on ownership/entitlements - shows total available books
 ///
@@ -47,7 +47,7 @@ class _CategoriesListScreenState extends ConsumerState<CategoriesListScreen> {
           .from('audiobooks')
           .select('category_id')
           .eq('status', 'approved')
-          .eq('is_music', false);
+          .eq('content_type', 'audiobook');
 
       final countMap = <int, int>{};
       for (final row in countsResponse as List) {

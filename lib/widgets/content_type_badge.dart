@@ -22,10 +22,12 @@ class ContentTypeBadge extends StatelessWidget {
 
   /// Create from audiobook map data
   factory ContentTypeBadge.fromAudiobook(Map<String, dynamic> item, {bool compact = true}) {
+    final ct = (item['content_type'] as String?) ?? 'audiobook';
     return ContentTypeBadge(
-      isMusic: item['is_music'] == true,
-      isPodcast: item['is_podcast'] == true,
-      isArticle: item['is_article'] == true,
+      isMusic: ct == 'music',
+      isPodcast: ct == 'podcast',
+      isArticle: ct == 'article',
+      isEbook: ct == 'ebook',
       compact: compact,
     );
   }

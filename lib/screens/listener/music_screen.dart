@@ -15,9 +15,9 @@ import 'package:myna/providers/home_providers.dart';
 // STRUCTURE (in order):
 // 1. Category Filter Chips (همه سبک‌ها, پاپ, سنتی, کلاسیک, etc.)
 // 2. ادامه‌ی شنیدن موسیقی (Continue Listening Music) - recently played music
-// 3. موسیقی ویژه (Featured Music) - is_music=true, is_featured=true
-// 4. جدیدترین‌ها (New Releases) - is_music=true, newest first
-// 5. پرشنونده‌ترین‌ها (Popular Music) - is_music=true, by play_count
+// 3. موسیقی ویژه (Featured Music) - content_type='music', is_featured=true
+// 4. جدیدترین‌ها (New Releases) - content_type='music', newest first
+// 5. پرشنونده‌ترین‌ها (Popular Music) - content_type='music', by play_count
 // 6. همه موسیقی‌ها (All Music) - grid of all music
 //
 // When a category is selected, only filtered grid is shown.
@@ -27,12 +27,12 @@ import 'package:myna/providers/home_providers.dart';
 // - هنرمند / آهنگساز / سال انتشار used where metadata exists
 //
 // DATABASE:
-// - audiobooks.is_music: boolean to distinguish music from audiobooks
+// - audiobooks.content_type: 'music' to distinguish music from audiobooks
 // - music_categories: 10 predefined genres
 // - audiobook_music_categories: junction table for many-to-many relationship
 // ============================================
 
-/// Music screen - shows music content (is_music = true)
+/// Music screen - shows music content (content_type = 'music')
 /// This screen is displayed in the bottom navigation "موسیقی" tab
 class MusicScreen extends ConsumerStatefulWidget {
   const MusicScreen({super.key, this.initialCategoryId});

@@ -177,7 +177,8 @@ class _AudiobookDetailScreenState extends ConsumerState<AudiobookDetailScreen> {
 
       // PERFORMANCE: Use metadata from JOIN instead of separate fetch
       // The audiobook query now includes book_metadata(*) and music_metadata(*)
-      final isMusic = audiobook['is_music'] == true;
+      final contentType = (audiobook['content_type'] as String?) ?? 'audiobook';
+      final isMusic = contentType == 'music';
       Map<String, dynamic>? metadata;
       if (isMusic) {
         metadata = audiobook['music_metadata'] as Map<String, dynamic>?;
@@ -239,7 +240,7 @@ class _AudiobookDetailScreenState extends ConsumerState<AudiobookDetailScreen> {
                 .from('audiobooks')
                 .select('id, title_fa, cover_url, author_fa, avg_rating, is_free, price_toman')
                 .eq('status', 'approved')
-                .eq('is_music', isMusic)
+                .eq('content_type', contentType)
                 .or(authorFilter)
                 .neq('id', widget.audiobookId)
                 .order('avg_rating', ascending: false)
@@ -256,7 +257,7 @@ class _AudiobookDetailScreenState extends ConsumerState<AudiobookDetailScreen> {
                 .from('audiobooks')
                 .select('id, title_fa, cover_url, author_fa, avg_rating, is_free, price_toman')
                 .eq('status', 'approved')
-                .eq('is_music', isMusic)
+                .eq('content_type', contentType)
                 .eq('category_id', categoryId)
                 .neq('id', widget.audiobookId)
                 .order('avg_rating', ascending: false)
@@ -1057,10 +1058,8 @@ class _AudiobookDetailScreenState extends ConsumerState<AudiobookDetailScreen> {
     // Determine aspect ratio by content type:
     //   Books (audiobook/ebook): 2:3 portrait
     //   Music, podcasts, articles: 1:1 square
-    final isMusic = _audiobook!['is_music'] == true;
-    final isPodcast = (_audiobook!['is_podcast'] as bool?) ?? false;
-    final isArticle = (_audiobook!['is_article'] as bool?) ?? false;
-    final bool isSquareCover = isMusic || isPodcast || isArticle;
+    final contentType = (_audiobook!['content_type'] as String?) ?? 'audiobook';
+    final bool isSquareCover = ['music', 'podcast', 'article'].contains(contentType);
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -1136,8 +1135,9 @@ class _AudiobookDetailScreenState extends ConsumerState<AudiobookDetailScreen> {
 
   Widget _buildInfoSection() {
     final title = (_audiobook!['title_fa'] as String?) ?? '';
-    final isMusic = _audiobook!['is_music'] == true;
-    final isPodcast = (_audiobook!['is_podcast'] as bool?) ?? false;
+    final contentType = (_audiobook!['content_type'] as String?) ?? 'audiobook';
+    final isMusic = contentType == 'music';
+    final isPodcast = contentType == 'podcast';
     // Check if this book is branded as "پرستو"
     final isParastoBrand = (_audiobook!['is_parasto_brand'] as bool?) ?? false;
     // Get narrator/artist from correct metadata table (not profiles which is the uploader account)
@@ -1259,7 +1259,7 @@ class _AudiobookDetailScreenState extends ConsumerState<AudiobookDetailScreen> {
           ),
 
           // Content type badge (article, music, podcast — not for regular audiobooks)
-          if (isMusic || isPodcast || (_audiobook!['is_article'] == true))
+          if (contentType != 'audiobook')
             Padding(
               padding: const EdgeInsets.only(top: 8),
               child: ContentTypeBadge.fromAudiobook(_audiobook!, compact: false),
@@ -1730,7 +1730,7 @@ class _AudiobookDetailScreenState extends ConsumerState<AudiobookDetailScreen> {
                     icon: Icons.list_rounded,
                     iconColor: AppColors.secondary,
                     value: chapterCount > 0 ? FarsiUtils.toFarsiDigits(chapterCount) : '-',
-                    label: _audiobook!['is_music'] == true ? 'آهنگ' : 'فصل',
+                    label: (_audiobook!['content_type'] as String?) == 'music' ? 'آهنگ' : 'فصل',
                   ),
                 ),
               ],
@@ -1980,7 +1980,7 @@ class _AudiobookDetailScreenState extends ConsumerState<AudiobookDetailScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  _audiobook!['is_music'] == true
+                  (_audiobook!['content_type'] as String?) == 'music'
                       ? 'آهنگ ${FarsiUtils.toFarsiDigits(currentChapter)} از ${FarsiUtils.toFarsiDigits(_chapters.length)}'
                       : 'فصل ${FarsiUtils.toFarsiDigits(currentChapter)} از ${FarsiUtils.toFarsiDigits(_chapters.length)}',
                   style: AppTypography.bodySmall,
@@ -2302,8 +2302,8 @@ class _AudiobookDetailScreenState extends ConsumerState<AudiobookDetailScreen> {
     if (description.isEmpty) return const SizedBox.shrink();
 
     // FIX: Use appropriate label based on content type (book vs music)
-    final isMusic = _audiobook!['is_music'] == true;
-    final sectionTitle = isMusic ? 'درباره‌ی این اثر' : 'درباره‌ی این کتاب';
+    final contentType = (_audiobook!['content_type'] as String?) ?? 'audiobook';
+    final sectionTitle = contentType == 'music' ? 'درباره‌ی این اثر' : 'درباره‌ی این کتاب';
 
     final textStyle = AppTypography.bodyLarge.copyWith(
       color: AppColors.textSecondary,
@@ -2350,8 +2350,7 @@ class _AudiobookDetailScreenState extends ConsumerState<AudiobookDetailScreen> {
   /// This is an OPTIONAL feature - does NOT auto-load, requires user tap.
   Widget _buildAiSummarySection() {
     // Hide for music - only show for audiobooks
-    final isMusic = _audiobook!['is_music'] == true;
-    if (isMusic) return const SizedBox.shrink();
+    if ((_audiobook!['content_type'] as String?) == 'music') return const SizedBox.shrink();
 
     // Only show if user is logged in (required for Edge Function auth)
     final user = Supabase.instance.client.auth.currentUser;
@@ -2563,10 +2562,11 @@ class _AudiobookDetailScreenState extends ConsumerState<AudiobookDetailScreen> {
     final displayCount = showAll ? _chapters.length : _initialChapterCount;
     final hasMore = _chapters.length > _initialChapterCount;
 
+    final isMusicContent = (_audiobook!['content_type'] as String?) == 'music';
     return _buildSection(
-      title: _audiobook!['is_music'] == true ? 'فهرست آهنگ‌ها' : 'فهرست فصل‌ها',
+      title: isMusicContent ? 'فهرست آهنگ‌ها' : 'فهرست فصل‌ها',
       trailing: Text(
-        _audiobook!['is_music'] == true
+        isMusicContent
             ? '${FarsiUtils.toFarsiDigits(_chapters.length)} آهنگ'
             : '${FarsiUtils.toFarsiDigits(_chapters.length)} فصل',
         style: const TextStyle(
@@ -2631,7 +2631,7 @@ class _AudiobookDetailScreenState extends ConsumerState<AudiobookDetailScreen> {
                       Text(
                         _chaptersExpanded
                             ? 'نمایش کمتر'
-                            : _audiobook!['is_music'] == true
+                            : isMusicContent
                                 ? 'نمایش همه ${FarsiUtils.toFarsiDigits(_chapters.length)} آهنگ'
                                 : 'نمایش همه ${FarsiUtils.toFarsiDigits(_chapters.length)} فصل',
                         style: const TextStyle(
@@ -2683,7 +2683,7 @@ class _AudiobookDetailScreenState extends ConsumerState<AudiobookDetailScreen> {
     // Allow playing if: owned, OR preview chapter, OR it's a free audiobook
     final canPlay = _isOwned || isPreview || isFree;
     final title = (ch['title_fa'] as String?) ??
-        (_audiobook!['is_music'] == true
+        ((_audiobook!['content_type'] as String?) == 'music'
             ? 'آهنگ ${FarsiUtils.toFarsiDigits(i + 1)}'
             : 'فصل ${FarsiUtils.toFarsiDigits(i + 1)}');
     final duration = (ch['duration_seconds'] as int?) ?? 0;

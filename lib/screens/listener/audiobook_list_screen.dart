@@ -137,7 +137,7 @@ class _AudiobookListScreenState extends ConsumerState<AudiobookListScreen> {
         .from('audiobooks')
         .select('*, book_metadata(narrator_name)')
         .eq('status', 'approved')
-        .eq('is_music', false)
+        .eq('content_type', 'audiobook')
         .order(orderColumn, ascending: ascending)
         .limit(100);
 
@@ -171,7 +171,7 @@ class _AudiobookListScreenState extends ConsumerState<AudiobookListScreen> {
         .from('audiobooks')
         .select('*, book_metadata(narrator_name)')
         .eq('status', 'approved')
-        .eq('is_music', false)
+        .eq('content_type', 'audiobook')
         .eq('is_featured', true)
         .order(orderColumn, ascending: ascending)
         .limit(100);
@@ -202,7 +202,7 @@ class _AudiobookListScreenState extends ConsumerState<AudiobookListScreen> {
         .from('audiobooks')
         .select('*, book_metadata(narrator_name)')
         .eq('status', 'approved')
-        .eq('is_music', false)
+        .eq('content_type', 'audiobook')
         .order(orderColumn, ascending: ascending)
         .limit(100);
 
@@ -230,7 +230,7 @@ class _AudiobookListScreenState extends ConsumerState<AudiobookListScreen> {
         .select('*, book_metadata(narrator_name)')
         .inFilter('id', audiobookIds)
         .eq('status', 'approved')
-        .eq('is_music', false);
+        .eq('content_type', 'audiobook');
 
     // Sort by the order from listening_progress
     final audiobooksMap = <int, Map<String, dynamic>>{};
@@ -267,23 +267,15 @@ class _AudiobookListScreenState extends ConsumerState<AudiobookListScreen> {
       }
     }
 
-    try {
-      final response = await Supabase.instance.client
-          .from('audiobooks')
-          .select('*, book_metadata(narrator_name)')
-          .eq('status', 'approved')
-          .eq('is_podcast', true)
-          .order(orderColumn, ascending: ascending)
-          .limit(100);
+    final response = await Supabase.instance.client
+        .from('audiobooks')
+        .select('*, book_metadata(narrator_name)')
+        .eq('status', 'approved')
+        .eq('content_type', 'podcast')
+        .order(orderColumn, ascending: ascending)
+        .limit(100);
 
-      return List<Map<String, dynamic>>.from(response);
-    } on PostgrestException catch (e) {
-      // Return empty list if is_podcast column doesn't exist yet
-      if (e.message.contains('is_podcast') || e.message.contains('is-podcast') || e.code == '42703' || e.code == '400') {
-        return [];
-      }
-      rethrow;
-    }
+    return List<Map<String, dynamic>>.from(response);
   }
 
   Future<List<Map<String, dynamic>>> _fetchArticles() async {
@@ -305,22 +297,15 @@ class _AudiobookListScreenState extends ConsumerState<AudiobookListScreen> {
       }
     }
 
-    try {
-      final response = await Supabase.instance.client
-          .from('audiobooks')
-          .select('*, book_metadata(narrator_name)')
-          .eq('status', 'approved')
-          .eq('is_article', true)
-          .order(orderColumn, ascending: ascending)
-          .limit(100);
+    final response = await Supabase.instance.client
+        .from('audiobooks')
+        .select('*, book_metadata(narrator_name)')
+        .eq('status', 'approved')
+        .eq('content_type', 'article')
+        .order(orderColumn, ascending: ascending)
+        .limit(100);
 
-      return List<Map<String, dynamic>>.from(response);
-    } on PostgrestException catch (e) {
-      if (e.message.contains('is_article') || e.message.contains('is-article') || e.code == '42703' || e.code == '400') {
-        return [];
-      }
-      rethrow;
-    }
+    return List<Map<String, dynamic>>.from(response);
   }
 
   bool _isNetworkError(dynamic e) {

@@ -14,15 +14,15 @@ import 'package:myna/utils/app_strings.dart';
 //
 // STRUCTURE (in order):
 // 1. ادامه‌ی شنیدن پادکست (Continue Listening) - recently played podcasts
-// 2. پادکست‌های جدید (New Podcasts) - is_podcast=true, newest first
-// 3. پرشنونده‌ترین‌ها (Popular Podcasts) - is_podcast=true, by play_count
+// 2. پادکست‌های جدید (New Podcasts) - content_type='podcast', newest first
+// 3. پرشنونده‌ترین‌ها (Popular Podcasts) - content_type='podcast', by play_count
 // 4. همه پادکست‌ها (All Podcasts) - grid of all podcasts
 //
 // DATABASE:
-// - audiobooks.is_podcast: boolean to distinguish podcasts
+// - audiobooks.content_type: 'podcast' to distinguish podcasts
 // ============================================
 
-/// Podcasts screen - shows podcast content (is_podcast = true)
+/// Podcasts screen - shows podcast content (content_type = 'podcast')
 /// This screen is displayed in the bottom navigation "پادکست‌ها" tab
 class PodcastsScreen extends ConsumerStatefulWidget {
   const PodcastsScreen({super.key});

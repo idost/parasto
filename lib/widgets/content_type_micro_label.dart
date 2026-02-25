@@ -30,15 +30,14 @@ class ContentTypeMicroLabel extends StatelessWidget {
   }
 
   static ContentType _detectType(Map<String, dynamic> data) {
-    if (data['is_article'] == true) return ContentType.article;
-    if (data['is_podcast'] == true) return ContentType.podcast;
-    if (data['is_music'] == true) return ContentType.music;
-    if (data['epub_url'] != null ||
-        data['is_ebook'] == true ||
-        data['_is_ebook'] == true) {
-      return ContentType.ebook;
+    final ct = (data['content_type'] as String?) ?? '';
+    switch (ct) {
+      case 'article': return ContentType.article;
+      case 'podcast': return ContentType.podcast;
+      case 'music':   return ContentType.music;
+      case 'ebook':   return ContentType.ebook;
+      default:        return ContentType.audiobook;
     }
-    return ContentType.audiobook;
   }
 
   String get _label {

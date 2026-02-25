@@ -26,10 +26,9 @@ class AudiobookCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final title = (book['title_fa'] as String?) ?? '';
-    final isMusic = (book['is_music'] as bool?) ?? false;
-    final isPodcast = (book['is_podcast'] as bool?) ?? false;
-    final isArticle = (book['is_article'] as bool?) ?? false;
-    final bool isSquareCover = isMusic || isPodcast || isArticle;
+    final contentType = (book['content_type'] as String?) ?? 'audiobook';
+    final isMusic = contentType == 'music';
+    final bool isSquareCover = ['music', 'podcast', 'article'].contains(contentType);
     final double cardCoverHeight = isSquareCover
         ? AppDimensions.musicCardCoverHeight  // 1:1 square
         : AppDimensions.cardCoverHeight;      // 2:3 portrait

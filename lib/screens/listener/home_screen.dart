@@ -37,11 +37,11 @@ import 'package:myna/screens/ebook_detail_screen.dart';
 // 1. Promo Banners Carousel
 // 2. ادامه گوش دادن (Continue Listening) - most recent incomplete (books ONLY now)
 // 3. اخیراً شنیده شده (Recently Played) - recent items (books ONLY now)
-// 4. پیشنهاد کتاب‌ها (Featured Books) - is_music=false ✓
+// 4. پیشنهاد کتاب‌ها (Featured Books) - content_type='audiobook' ✓
 // 5. دسته‌بندی‌ها (Categories) - book categories
-// 6. جدیدترین کتاب‌ها (New Books) - is_music=false ✓
+// 6. جدیدترین کتاب‌ها (New Books) - content_type='audiobook' ✓
 // 7. Promo Shelves (curated collections)
-// 8. پرشنونده‌ترین کتاب‌ها (Popular Books) - is_music=false ✓
+// 8. پرشنونده‌ترین کتاب‌ها (Popular Books) - content_type='audiobook' ✓
 //
 // CHANGES MADE:
 // - Section titles now include "کتاب" for clarity (پیشنهاد کتاب‌ها, جدیدترین کتاب‌ها, etc.)
@@ -170,7 +170,7 @@ class HomeScreen extends ConsumerWidget {
                             ),
                     ),
 
-                    // New Book Releases (is_music=false) - shown first
+                    // New Book Releases (content_type='audiobook') - shown first
                     newReleasesAsync.when(
                       loading: () => const BookCardListSkeleton(),
                       error: (e, _) => home_sk.SectionError(
@@ -194,7 +194,7 @@ class HomeScreen extends ConsumerWidget {
                             ),
                     ),
 
-                    // Featured Books Section (is_music=false)
+                    // Featured Books Section (content_type='audiobook')
                     featuredAsync.when(
                       loading: () => const BookCardListSkeleton(),
                       error: (e, _) => home_sk.SectionError(
@@ -269,7 +269,7 @@ class HomeScreen extends ConsumerWidget {
                       ),
                     ),
 
-                    // Popular Books (is_music=false)
+                    // Popular Books (content_type='audiobook')
                     popularAsync.when(
                       loading: () => const BookCardListSkeleton(),
                       error: (_, __) => home_sk.SectionError(
@@ -320,7 +320,7 @@ class HomeScreen extends ConsumerWidget {
                               ),
                       ),
 
-                    // Podcasts Section (is_podcast=true) — respects content preferences
+                    // Podcasts Section (content_type='podcast') — respects content preferences
                     if (contentPrefs.showPodcasts)
                       podcastsAsync.when(
                         loading: () => const SizedBox.shrink(),
@@ -342,7 +342,7 @@ class HomeScreen extends ConsumerWidget {
                               ),
                       ),
 
-                    // Articles Section (is_article=true) — no dedicated preference toggle
+                    // Articles Section (content_type='article') — no dedicated preference toggle
                     articlesAsync.when(
                         loading: () => const SizedBox.shrink(),
                         error: (_, __) => const SizedBox.shrink(),

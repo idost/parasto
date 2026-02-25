@@ -16,7 +16,7 @@ import 'package:myna/utils/farsi_utils.dart';
 /// Shows audiobooks in a specific BOOK category.
 /// FILTERS:
 /// - status = 'approved' (only approved content)
-/// - is_music = false (only books, not music)
+/// - content_type = 'audiobook' (only books, not music)
 /// - category_id = widget.categoryId
 ///
 /// NOTE: This screen is for book categories. Music categories use a different
@@ -104,7 +104,7 @@ class _CategoryScreenState extends ConsumerState<CategoryScreen> {
           .select('*, book_metadata(narrator_name)')
           .eq('category_id', widget.categoryId as Object)
           .eq('status', 'approved' as Object)
-          .eq('is_music', false)
+          .eq('content_type', 'audiobook')
           .order(orderColumn, ascending: ascending)
           .range(_currentOffset + _pageSize, _currentOffset + _pageSize * 2 - 1);
 
@@ -164,7 +164,7 @@ class _CategoryScreenState extends ConsumerState<CategoryScreen> {
           .select('*, book_metadata(narrator_name)')
           .eq('category_id', widget.categoryId as Object)
           .eq('status', 'approved' as Object)
-          .eq('is_music', false) // Only books, not music
+          .eq('content_type', 'audiobook') // Only books, not music
           .order(orderColumn, ascending: ascending)
           .range(0, _pageSize - 1);
 

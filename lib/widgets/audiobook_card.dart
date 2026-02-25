@@ -49,13 +49,12 @@ class AudiobookCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final title = (book['title_fa'] as String?) ?? '';
-    final isMusic = book['is_music'] == true;
-    final isPodcast = (book['is_podcast'] as bool?) ?? false;
-    final isArticle = (book['is_article'] as bool?) ?? false;
+    final contentType = (book['content_type'] as String?) ?? 'audiobook';
+    final isMusic = contentType == 'music';
     final isParastoBrand = (book['is_parasto_brand'] as bool?) ?? false;
 
     // Aspect-ratio-aware cover: square for music/podcast/article, portrait otherwise
-    final bool isSquareCover = isMusic || isPodcast || isArticle;
+    final bool isSquareCover = ['music', 'podcast', 'article'].contains(contentType);
     final double effectiveCoverHeight =
         isSquareCover ? width : coverHeight; // 1:1 or passed 2:3
 
@@ -266,10 +265,8 @@ class AudiobookCardCompact extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isMusic = book['is_music'] == true;
-    final isPodcast = (book['is_podcast'] as bool?) ?? false;
-    final isArticle = (book['is_article'] as bool?) ?? false;
-    final isSquareCover = isMusic || isPodcast || isArticle;
+    final contentType = (book['content_type'] as String?) ?? 'audiobook';
+    final isSquareCover = ['music', 'podcast', 'article'].contains(contentType);
 
     return AudiobookCard(
       book: book,

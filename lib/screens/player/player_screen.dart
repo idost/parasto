@@ -179,7 +179,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
         : null;
 
     final author = (displayAudiobook['author_fa'] as String?) ?? '';
-    final isMusic = displayAudiobook['is_music'] == true;
+    final isMusic = (displayAudiobook['content_type'] as String?) == 'music';
     // Get narrator/artist from the correct metadata table
     // For books: book_metadata.narrator_name (actual voice narrator)
     // For music: music_metadata.artist_name or author_fa (artist)
@@ -387,7 +387,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Text(
-                widget.audiobook['is_music'] == true
+                (widget.audiobook['content_type'] as String?) == 'music'
                     ? 'آهنگ ${FarsiUtils.toFarsiDigits(currentChapterIndex + 1)} از ${FarsiUtils.toFarsiDigits(chapters.length)}'
                     : 'فصل ${FarsiUtils.toFarsiDigits(currentChapterIndex + 1)} از ${FarsiUtils.toFarsiDigits(chapters.length)}',
                 style: const TextStyle(
@@ -1213,7 +1213,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
           // Chapters/Tracks
           _buildSecondaryButton(
             icon: Icons.menu_book_rounded,
-            label: widget.audiobook['is_music'] == true
+            label: (widget.audiobook['content_type'] as String?) == 'music'
                 ? '${FarsiUtils.toFarsiDigits(chapters.length)} آهنگ'
                 : '${FarsiUtils.toFarsiDigits(chapters.length)} فصل',
             onPressed: chapters.isEmpty
@@ -1634,7 +1634,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     String label;
 
     if (sleepTimerMode == SleepTimerMode.endOfChapter) {
-      label = widget.audiobook['is_music'] == true ? 'پایان آلبوم' : 'پایان فصل';
+      label = (widget.audiobook['content_type'] as String?) == 'music' ? 'پایان آلبوم' : 'پایان فصل';
     } else if (sleepTimerMode == SleepTimerMode.timed) {
       final remaining = sleepTimerRemaining;
       // Show M:SS format for precise countdown
@@ -1690,7 +1690,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
   ) {
     String timerText;
     if (mode == SleepTimerMode.endOfChapter) {
-      timerText = widget.audiobook['is_music'] == true ? 'پایان آلبوم' : 'پایان فصل';
+      timerText = (widget.audiobook['content_type'] as String?) == 'music' ? 'پایان آلبوم' : 'پایان فصل';
     } else {
       final mins = remaining.inMinutes;
       final secs = remaining.inSeconds % 60;
@@ -1836,7 +1836,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            widget.audiobook['is_music'] == true ? 'پایان این آلبوم' : 'پایان این فصل',
+                            (widget.audiobook['content_type'] as String?) == 'music' ? 'پایان این آلبوم' : 'پایان این فصل',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
@@ -1847,7 +1847,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            widget.audiobook['is_music'] == true
+                            (widget.audiobook['content_type'] as String?) == 'music'
                                 ? 'وقتی آلبوم تمام شد متوقف می‌شود'
                                 : 'وقتی فصل تمام شد متوقف می‌شود',
                             style: const TextStyle(

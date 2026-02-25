@@ -9,8 +9,8 @@ import 'package:myna/utils/app_logger.dart';
 ///
 /// Shows:
 /// - Creator name, type (in Farsi), optional bio and avatar
-/// - List of audiobooks (کتاب‌های صوتی) where is_music = false
-/// - List of music (آثار موسیقی) where is_music = true
+/// - List of audiobooks (کتاب‌های صوتی) where content_type = 'audiobook'
+/// - List of music (آثار موسیقی) where content_type = 'music'
 class CreatorProfileScreen extends StatefulWidget {
   final String creatorId;
 
@@ -66,8 +66,8 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen> {
       }
 
       // Separate books and music
-      final books = works.where((w) => w['is_music'] != true).toList();
-      final music = works.where((w) => w['is_music'] == true).toList();
+      final books = works.where((w) => (w['content_type'] as String?) != 'music').toList();
+      final music = works.where((w) => (w['content_type'] as String?) == 'music').toList();
 
       setState(() {
         _creator = creator;
@@ -689,7 +689,8 @@ class _WorkCard extends StatelessWidget {
     final title = (work['title_fa'] as String?) ?? '';
     final coverUrl = work['cover_url'] as String?;
     final isFree = work['is_free'] == true;
-    final isMusic = work['is_music'] == true;
+    final contentType = (work['content_type'] as String?) ?? 'audiobook';
+    final isMusic = contentType == 'music';
     final role = work['role'] as String?;
     final roleLabel = CreatorService.getRoleLabel(role);
 
@@ -728,10 +729,10 @@ class _WorkCard extends StatelessWidget {
                         ? CachedNetworkImage(
                             imageUrl: coverUrl,
                             fit: BoxFit.cover,
-                            placeholder: (_, __) => _buildCoverPlaceholder(isMusic),
-                            errorWidget: (_, __, ___) => _buildCoverPlaceholder(isMusic),
+                            placeholder: (_, __) => _buildCoverPlaceholder(contentType),
+                            errorWidget: (_, __, ___) => _buildCoverPlaceholder(contentType),
                           )
-                        : _buildCoverPlaceholder(isMusic),
+                        : _buildCoverPlaceholder(contentType),
 
                     // Gradient overlay at bottom
                     Positioned(
@@ -767,13 +768,23 @@ class _WorkCard extends StatelessWidget {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
-                              isMusic ? Icons.music_note_rounded : Icons.menu_book_rounded,
+                              switch (contentType) {
+                                'music' => Icons.music_note_rounded,
+                                'podcast' => Icons.podcasts_rounded,
+                                'article' => Icons.article_rounded,
+                                _ => Icons.menu_book_rounded,
+                              },
                               size: 10,
                               color: Colors.white70,
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              isMusic ? 'موسیقی' : 'کتاب',
+                              switch (contentType) {
+                                'music' => 'موسیقی',
+                                'podcast' => 'پادکست',
+                                'article' => 'مقاله',
+                                _ => 'کتاب',
+                              },
                               style: const TextStyle(
                                 color: Colors.white70,
                                 fontSize: 9,
@@ -855,12 +866,17 @@ class _WorkCard extends StatelessWidget {
     );
   }
 
-  Widget _buildCoverPlaceholder(bool isMusic) {
+  Widget _buildCoverPlaceholder(String contentType) {
     return Container(
       color: AppColors.surface,
       child: Center(
         child: Icon(
-          isMusic ? Icons.music_note_rounded : Icons.menu_book_rounded,
+          switch (contentType) {
+            'music' => Icons.music_note_rounded,
+            'podcast' => Icons.podcasts_rounded,
+            'article' => Icons.article_rounded,
+            _ => Icons.menu_book_rounded,
+          },
           size: 48,
           color: AppColors.textTertiary.withValues(alpha: 0.4),
         ),

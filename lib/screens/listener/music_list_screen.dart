@@ -131,12 +131,12 @@ class _MusicListScreenState extends ConsumerState<MusicListScreen> {
     final response = await Supabase.instance.client
         .from('audiobooks')
         .select('''
-          id, title_fa, title_en, cover_url, is_music, is_free, is_parasto_brand,
+          id, title_fa, title_en, cover_url, content_type, is_free, is_parasto_brand,
           author_fa, play_count, avg_rating, created_at,
           music_metadata(artist_name, featured_artists)
         ''')
         .eq('status', 'approved')
-        .eq('is_music', true)
+        .eq('content_type', 'music')
         .order(orderColumn, ascending: ascending)
         .limit(100);
 
@@ -169,12 +169,12 @@ class _MusicListScreenState extends ConsumerState<MusicListScreen> {
     final response = await Supabase.instance.client
         .from('audiobooks')
         .select('''
-          id, title_fa, title_en, cover_url, is_music, is_free, is_parasto_brand,
+          id, title_fa, title_en, cover_url, content_type, is_free, is_parasto_brand,
           author_fa, play_count, avg_rating, created_at,
           music_metadata(artist_name, featured_artists)
         ''')
         .eq('status', 'approved')
-        .eq('is_music', true)
+        .eq('content_type', 'music')
         .eq('is_featured', true)
         .order(orderColumn, ascending: ascending)
         .limit(100);
@@ -205,12 +205,12 @@ class _MusicListScreenState extends ConsumerState<MusicListScreen> {
     final response = await Supabase.instance.client
         .from('audiobooks')
         .select('''
-          id, title_fa, title_en, cover_url, is_music, is_free, is_parasto_brand,
+          id, title_fa, title_en, cover_url, content_type, is_free, is_parasto_brand,
           author_fa, play_count, avg_rating, created_at,
           music_metadata(artist_name, featured_artists)
         ''')
         .eq('status', 'approved')
-        .eq('is_music', true)
+        .eq('content_type', 'music')
         .order(orderColumn, ascending: ascending)
         .limit(100);
 
@@ -232,18 +232,18 @@ class _MusicListScreenState extends ConsumerState<MusicListScreen> {
         .map((p) => p['audiobook_id'] as int)
         .toList();
 
-    // Fetch music details (is_music = true)
+    // Fetch music details (content_type = 'music')
     // PERFORMANCE: Select only needed columns instead of *
     final musicResponse = await Supabase.instance.client
         .from('audiobooks')
         .select('''
-          id, title_fa, title_en, cover_url, is_music, is_free, is_parasto_brand,
+          id, title_fa, title_en, cover_url, content_type, is_free, is_parasto_brand,
           author_fa, play_count, avg_rating,
           music_metadata(artist_name, featured_artists)
         ''')
         .inFilter('id', audiobookIds)
         .eq('status', 'approved')
-        .eq('is_music', true);
+        .eq('content_type', 'music');
 
     // Sort by the order from listening_progress
     final musicMap = <int, Map<String, dynamic>>{};

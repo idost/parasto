@@ -36,10 +36,10 @@ enum LibrarySortOption {
 
 /// Content type for library filtering (Books, Music, Podcasts)
 enum ContentType {
-  books,    // کتاب‌ها (is_music=false, is_podcast=false, is_article=false)
-  music,    // موسیقی (is_music=true)
-  podcasts, // پادکست‌ها (is_podcast=true)
-  articles, // مقاله‌ها (is_article=true)
+  books,    // کتاب‌ها (content_type='audiobook')
+  music,    // موسیقی (content_type='music')
+  podcasts, // پادکست‌ها (content_type='podcast')
+  articles, // مقاله‌ها (content_type='article')
 }
 
 /// Provider family for owned items with progress, filtered by content type
@@ -87,48 +87,26 @@ final ownedItemsWithProgressProvider = FutureProvider.family<List<Map<String, dy
       var query = Supabase.instance.client
           .from('audiobooks')
           .select('''
-            id, title_fa, title_en, cover_url, is_music, is_free, is_parasto_brand,
+            id, title_fa, title_en, cover_url, content_type, is_free, is_parasto_brand,
             total_duration_seconds, author_fa, author_en, play_count, status, category_id,
             book_metadata(narrator_name),
             music_metadata(artist_name, featured_artists)
           ''')
           .inFilter('id', audiobookIds);
 
-      // Apply content type filter
-      // Books: is_music=false (podcasts will be excluded once is_podcast column is added)
-      // Music: is_music=true
-      // Podcasts: is_podcast=true (returns empty if column doesn't exist yet)
+      // Apply content type filter using the unified content_type column
       switch (contentType) {
         case ContentType.books:
-          // For books: is_music=false AND exclude podcasts and articles
-          query = query.eq('is_music', false).eq('is_article', false);
+          query = query.eq('content_type', 'audiobook');
         case ContentType.music:
-          query = query.eq('is_music', true);
+          query = query.eq('content_type', 'music');
         case ContentType.podcasts:
-          // Podcasts feature - query with is_podcast filter
-          query = query.eq('is_podcast', true);
+          query = query.eq('content_type', 'podcast');
         case ContentType.articles:
-          query = query.eq('is_article', true);
+          query = query.eq('content_type', 'article');
       }
 
-      // Execute query - for podcasts/articles, handle case where column doesn't exist
-      if (contentType == ContentType.podcasts || contentType == ContentType.articles) {
-        try {
-          audiobooksResponse = await query;
-        } on PostgrestException catch (e) {
-          // If column doesn't exist, return empty list instead of error
-          // Note: Supabase may report column with hyphen in error message
-          if (e.message.contains('is_podcast') || e.message.contains('is-podcast') ||
-              e.message.contains('is_article') || e.message.contains('is-article') ||
-              e.code == '42703' || e.code == '400') {
-            AppLogger.d('Library: Column not found for $contentType, returning empty list');
-            return [];
-          }
-          rethrow;
-        }
-      } else {
-        audiobooksResponse = await query;
-      }
+      audiobooksResponse = await query;
       AppLogger.d('Library: Step 2 SUCCESS - Got ${audiobooksResponse.length} audiobooks');
     } on PostgrestException catch (e) {
       AppLogger.e('Library: Step 2 FAILED (audiobooks) - Code: ${e.code}, Message: ${e.message}');
@@ -239,50 +217,23 @@ final wishlistItemsProvider = FutureProvider.family<List<Map<String, dynamic>>, 
       .select('audiobook_id, audiobooks!inner(*, book_metadata(narrator_name), music_metadata(artist_name))')
       .eq('user_id', user.id);
 
-  // Apply content type filter
-  // Books: is_music=false (audiobooks without is_podcast filter for backwards compatibility)
-  // Music: is_music=true
-  // Podcasts: is_podcast=true (may return empty if column doesn't exist)
+  // Apply content type filter using the unified content_type column
   switch (contentType) {
     case ContentType.books:
-      // For books: is_music=false AND exclude articles
-      query = query.eq('audiobooks.is_music', false).eq('audiobooks.is_article', false);
+      query = query.eq('audiobooks.content_type', 'audiobook');
     case ContentType.music:
-      query = query.eq('audiobooks.is_music', true);
+      query = query.eq('audiobooks.content_type', 'music');
     case ContentType.podcasts:
-      query = query.eq('audiobooks.is_podcast', true);
+      query = query.eq('audiobooks.content_type', 'podcast');
     case ContentType.articles:
-      query = query.eq('audiobooks.is_article', true);
+      query = query.eq('audiobooks.content_type', 'article');
   }
 
-  // Execute query - for podcasts/articles, handle case where column doesn't exist
-  List<dynamic> response;
-  if (contentType == ContentType.podcasts || contentType == ContentType.articles) {
-    try {
-      response = await query;
-    } on PostgrestException catch (e) {
-      // If column doesn't exist, return empty list instead of error
-      if (e.message.contains('is_podcast') || e.message.contains('is-podcast') ||
-          e.message.contains('is_article') || e.message.contains('is-article') ||
-          e.code == '42703' || e.code == '400') {
-        AppLogger.d('Wishlist: Column not found for $contentType, returning empty list');
-        return [];
-      }
-      rethrow;
-    }
-  } else {
-    response = await query;
-  }
+  final response = await query;
 
-  // For books, filter out podcasts in memory if they accidentally got included
-  var items = response
+  final items = response
       .map((e) => e['audiobooks'] as Map<String, dynamic>)
       .toList();
-
-  if (contentType == ContentType.books) {
-    // Filter out any items that are podcasts (is_podcast = true)
-    items = items.where((item) => item['is_podcast'] != true).toList();
-  }
 
   return items;
 });

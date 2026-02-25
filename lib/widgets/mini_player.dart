@@ -313,7 +313,7 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer>
     }
 
     // Show chapter name with counter
-    final isMusic = book['is_music'] == true;
+    final isMusic = (book['content_type'] as String?) == 'music';
     final chapterLabel = isMusic ? 'آهنگ' : 'فصل';
     final chapterCounter = totalChapters > 1
         ? '$chapterLabel ${FarsiUtils.toFarsiDigits(currentChapterIndex + 1)} از ${FarsiUtils.toFarsiDigits(totalChapters)}'

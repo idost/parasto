@@ -693,9 +693,6 @@ class _PromoShelfCard extends StatelessWidget {
     final coverUrl = book['cover_url'] as String?;
     final title = book['title_fa'] as String? ?? book['title_en'] as String? ?? '';
     final author = book['author_fa'] as String? ?? '';
-    final isMusic = book['is_music'] == true;
-    final isPodcast = book['is_podcast'] == true;
-
     return GestureDetector(
       onTap: () => Navigator.push(
         context,
@@ -740,10 +737,7 @@ class _PromoShelfCard extends StatelessWidget {
                   Positioned(
                     top: 8,
                     right: 8,
-                    child: ContentTypeBadge(
-                      isMusic: isMusic,
-                      isPodcast: isPodcast,
-                    ),
+                    child: ContentTypeBadge.fromAudiobook(book),
                   ),
                 ],
               ),
