@@ -6,6 +6,7 @@ import 'package:myna/widgets/admin/approval_queue_widget.dart'
     show pendingContentProvider;
 import 'package:myna/screens/admin/admin_audiobooks_screen.dart';
 import 'package:myna/screens/admin/admin_ebooks_screen.dart';
+import 'package:myna/screens/admin/admin_upload_audiobook_screen.dart';
 
 /// Hub screen that unifies all content management tabs (audiobooks, music,
 /// podcasts, articles, ebooks) under a single TabBar interface.
@@ -47,91 +48,122 @@ class _AdminContentHubScreenState extends ConsumerState<AdminContentHubScreen>
 
     return Directionality(
       textDirection: TextDirection.rtl,
-      child: Column(
+      child: Stack(
         children: [
-          // ── Header ──────────────────────────────────────────────────────
-          AdminScreenHeader(
-            title: 'محتوا',
-            icon: Icons.library_books_rounded,
-            actions: [
-              if (pendingCount > 0)
-                Container(
-                  margin: const EdgeInsets.only(left: 8),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: AppColors.warning,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    '$pendingCount',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
+          Column(
+            children: [
+              // ── Header ────────────────────────────────────────────────────
+              AdminScreenHeader(
+                title: 'محتوا',
+                icon: Icons.library_books_rounded,
+                actions: [
+                  if (pendingCount > 0)
+                    Container(
+                      margin: const EdgeInsets.only(left: 8),
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppColors.warning,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        '$pendingCount',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
+                ],
+              ),
+
+              // ── Tab Bar ───────────────────────────────────────────────────
+              TabBar(
+                controller: _tabController,
+                isScrollable: true,
+                labelColor: AppColors.primary,
+                unselectedLabelColor: AppColors.textSecondary,
+                indicatorColor: AppColors.primary,
+                indicatorWeight: 3,
+                labelStyle:
+                    const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                unselectedLabelStyle:
+                    const TextStyle(fontWeight: FontWeight.normal, fontSize: 14),
+                tabs: const [
+                  Tab(text: 'همه'),
+                  Tab(text: 'کتاب\u200cها'),
+                  Tab(text: 'موسیقی'),
+                  Tab(text: 'پادکست\u200cها'),
+                  Tab(text: 'مقالات'),
+                  Tab(text: 'ایبوک\u200cها'),
+                ],
+              ),
+
+              // ── Tab Views ─────────────────────────────────────────────────
+              Expanded(
+                child: TabBarView(
+                  controller: _tabController,
+                  children: const [
+                    AdminAudiobooksScreen(
+                      key: ValueKey('content-all'),
+                      embedded: true,
+                      contentTypeFilter: null,
+                    ),
+                    AdminAudiobooksScreen(
+                      key: ValueKey('content-books'),
+                      embedded: true,
+                      contentTypeFilter: 'books',
+                    ),
+                    AdminAudiobooksScreen(
+                      key: ValueKey('content-music'),
+                      embedded: true,
+                      contentTypeFilter: 'music',
+                    ),
+                    AdminAudiobooksScreen(
+                      key: ValueKey('content-podcasts'),
+                      embedded: true,
+                      contentTypeFilter: 'podcasts',
+                    ),
+                    AdminAudiobooksScreen(
+                      key: ValueKey('content-articles'),
+                      embedded: true,
+                      contentTypeFilter: 'articles',
+                    ),
+                    AdminEbooksScreen(
+                      key: ValueKey('content-ebooks'),
+                      embedded: true,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          // ── Upload FAB (bottom-start, RTL = bottom-left) ─────────────────
+          Positioned(
+            bottom: 16,
+            left: 16,
+            child: FloatingActionButton.extended(
+              heroTag: 'admin_content_hub_upload',
+              backgroundColor: const Color(0xFFD4A843),
+              foregroundColor: Colors.white,
+              icon: const Icon(Icons.add),
+              label: const Text(
+                'آپلود محتوا',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+              onPressed: () async {
+                await Navigator.push<void>(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const AdminUploadAudiobookScreen(),
                   ),
-                ),
-            ],
-          ),
-
-          // ── Tab Bar ─────────────────────────────────────────────────────
-          TabBar(
-            controller: _tabController,
-            isScrollable: true,
-            labelColor: AppColors.primary,
-            unselectedLabelColor: AppColors.textSecondary,
-            indicatorColor: AppColors.primary,
-            indicatorWeight: 3,
-            labelStyle:
-                const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-            unselectedLabelStyle:
-                const TextStyle(fontWeight: FontWeight.normal, fontSize: 14),
-            tabs: const [
-              Tab(text: 'همه'),
-              Tab(text: 'کتاب\u200cها'),
-              Tab(text: 'موسیقی'),
-              Tab(text: 'پادکست\u200cها'),
-              Tab(text: 'مقالات'),
-              Tab(text: 'ایبوک\u200cها'),
-            ],
-          ),
-
-          // ── Tab Views ───────────────────────────────────────────────────
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: const [
-                AdminAudiobooksScreen(
-                  key: ValueKey('content-all'),
-                  embedded: true,
-                  contentTypeFilter: null,
-                ),
-                AdminAudiobooksScreen(
-                  key: ValueKey('content-books'),
-                  embedded: true,
-                  contentTypeFilter: 'books',
-                ),
-                AdminAudiobooksScreen(
-                  key: ValueKey('content-music'),
-                  embedded: true,
-                  contentTypeFilter: 'music',
-                ),
-                AdminAudiobooksScreen(
-                  key: ValueKey('content-podcasts'),
-                  embedded: true,
-                  contentTypeFilter: 'podcasts',
-                ),
-                AdminAudiobooksScreen(
-                  key: ValueKey('content-articles'),
-                  embedded: true,
-                  contentTypeFilter: 'articles',
-                ),
-                AdminEbooksScreen(
-                  key: ValueKey('content-ebooks'),
-                  embedded: true,
-                ),
-              ],
+                );
+                // Refresh all content lists after a potential upload
+                ref.invalidate(adminAudiobooksProvider);
+                ref.invalidate(pendingContentProvider);
+              },
             ),
           ),
         ],
