@@ -3032,7 +3032,7 @@ class _AudiobookDetailScreenState extends ConsumerState<AudiobookDetailScreen> {
           ),
           const SizedBox(height: 16),
           SizedBox(
-            height: 200,
+            height: 245,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               itemCount: _moreFromAuthor.length,
@@ -3064,7 +3064,7 @@ class _AudiobookDetailScreenState extends ConsumerState<AudiobookDetailScreen> {
           ),
           const SizedBox(height: 16),
           SizedBox(
-            height: 200,
+            height: 245,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               itemCount: _youMayAlsoEnjoy.length,
@@ -3097,25 +3097,28 @@ class _AudiobookDetailScreenState extends ConsumerState<AudiobookDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Cover image
-            Expanded(
-              child: Container(
-                width: 120,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  color: AppColors.surfaceLight,
-                  image: book['cover_url'] != null
-                      ? DecorationImage(
-                          image: NetworkImage(book['cover_url'] as String),
-                          fit: BoxFit.cover,
-                        )
-                      : null,
-                ),
-                child: book['cover_url'] == null
-                    ? const Center(
-                        child: Icon(Icons.auto_stories_rounded, size: 32, color: AppColors.textTertiary),
+            // Cover image — fixed 2:3 portrait aspect ratio (width 120 → height 180)
+            AspectRatio(
+              aspectRatio: 2 / 3,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: book['cover_url'] != null
+                    ? Image.network(
+                        book['cover_url'] as String,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          color: AppColors.surfaceLight,
+                          child: const Center(
+                            child: Icon(Icons.auto_stories_rounded, size: 32, color: AppColors.textTertiary),
+                          ),
+                        ),
                       )
-                    : null,
+                    : Container(
+                        color: AppColors.surfaceLight,
+                        child: const Center(
+                          child: Icon(Icons.auto_stories_rounded, size: 32, color: AppColors.textTertiary),
+                        ),
+                      ),
               ),
             ),
             const SizedBox(height: 8),

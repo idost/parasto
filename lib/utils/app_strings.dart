@@ -1201,7 +1201,7 @@ class AppStrings {
   static String get newBooks {
     switch (_currentLanguage) {
       case AppLanguage.fa:
-        return 'جدیدترین کتاب‌ها';
+        return 'جدیدترین';
       case AppLanguage.en:
         return 'New Books';
       case AppLanguage.tg:
@@ -1223,7 +1223,7 @@ class AppStrings {
   static String get popularBooks {
     switch (_currentLanguage) {
       case AppLanguage.fa:
-        return 'پرشنونده‌ترین کتاب‌ها';
+        return 'پرشنونده‌ترین';
       case AppLanguage.en:
         return 'Popular Books';
       case AppLanguage.tg:
@@ -1549,7 +1549,7 @@ class AppStrings {
   static String get popularPodcasts {
     switch (_currentLanguage) {
       case AppLanguage.fa:
-        return 'پرشنونده‌ترین پادکست‌ها';
+        return 'پرشنونده‌ترین';
       case AppLanguage.en:
         return 'Popular Podcasts';
       case AppLanguage.tg:
@@ -1597,7 +1597,7 @@ class AppStrings {
   static String get popularArticles {
     switch (_currentLanguage) {
       case AppLanguage.fa:
-        return 'پرشنونده‌ترین مقاله‌ها';
+        return 'پرشنونده‌ترین';
       case AppLanguage.en:
         return 'Popular Articles';
       case AppLanguage.tg:
@@ -2476,7 +2476,7 @@ class AppStrings {
   static String becauseYouListenedTo(String bookTitle) {
     switch (_currentLanguage) {
       case AppLanguage.fa:
-        return 'چون «$bookTitle» را گوش دادید...';
+        return 'شاید بپسندید';
       case AppLanguage.en:
         return 'Because you listened to "$bookTitle"...';
       case AppLanguage.tg:

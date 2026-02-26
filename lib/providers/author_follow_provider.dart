@@ -1,29 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
 import 'package:myna/utils/app_logger.dart';
-
-/// Represents a followed author
-class FollowedAuthor {
-  final String authorName;
-  final DateTime followedAt;
-
-  const FollowedAuthor({
-    required this.authorName,
-    required this.followedAt,
-  });
-
-  Map<String, dynamic> toJson() => {
-        'authorName': authorName,
-        'followedAt': followedAt.toIso8601String(),
-      };
-
-  factory FollowedAuthor.fromJson(Map<String, dynamic> json) => FollowedAuthor(
-        authorName: json['authorName'] as String,
-        followedAt: DateTime.parse(json['followedAt'] as String),
-      );
-}
 
 /// State for author following
 class AuthorFollowState {
@@ -52,75 +29,96 @@ class AuthorFollowState {
 }
 
 /// Notifier for managing author follows
-/// Stores follows locally (SharedPreferences) for simplicity
-/// Could be extended to sync with Supabase if needed
+/// Persists to Supabase author_follows table (user_id, author_name, followed_at)
 class AuthorFollowNotifier extends StateNotifier<AuthorFollowState> {
-  AuthorFollowNotifier() : super(const AuthorFollowState(isLoading: true)) {
+  AuthorFollowNotifier(Ref ref) : super(const AuthorFollowState(isLoading: true)) {
     _loadFollows();
   }
 
-  static const _storageKey = 'followed_authors';
+  SupabaseClient get _supabase => Supabase.instance.client;
 
   Future<void> _loadFollows() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final jsonString = prefs.getString(_storageKey);
+    final user = _supabase.auth.currentUser;
+    if (user == null) {
+      state = const AuthorFollowState();
+      return;
+    }
 
-      if (jsonString != null) {
-        final jsonList = json.decode(jsonString) as List<dynamic>;
-        final authors = jsonList
-            .map((j) => FollowedAuthor.fromJson(j as Map<String, dynamic>))
-            .map((a) => a.authorName.toLowerCase().trim())
-            .toSet();
-        state = AuthorFollowState(followedAuthors: authors);
-      } else {
-        state = const AuthorFollowState();
-      }
-      AppLogger.d('AUTHOR_FOLLOW: Loaded ${state.followedAuthors.length} followed authors');
+    try {
+      final rows = await _supabase
+          .from('author_follows')
+          .select('author_name')
+          .eq('user_id', user.id);
+
+      final authors = (rows as List)
+          .map((r) => ((r['author_name'] as String?) ?? '').toLowerCase().trim())
+          .where((name) => name.isNotEmpty)
+          .toSet();
+
+      state = AuthorFollowState(followedAuthors: authors);
+      AppLogger.d('AUTHOR_FOLLOW: Loaded ${authors.length} followed authors');
     } catch (e) {
       AppLogger.e('Failed to load followed authors', error: e);
       state = const AuthorFollowState();
     }
   }
 
-  Future<void> _saveFollows() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final followsList = state.followedAuthors
-          .map((name) => FollowedAuthor(
-                authorName: name,
-                followedAt: DateTime.now(),
-              ).toJson())
-          .toList();
-      await prefs.setString(_storageKey, json.encode(followsList));
-    } catch (e) {
-      AppLogger.e('Failed to save followed authors', error: e);
-    }
-  }
-
-  /// Follow an author
-  void follow(String authorName) {
+  /// Follow an author — optimistic UI update + Supabase insert
+  Future<void> follow(String authorName) async {
     if (authorName.isEmpty) return;
     final normalized = authorName.toLowerCase().trim();
     if (state.followedAuthors.contains(normalized)) return;
 
+    final user = _supabase.auth.currentUser;
+    if (user == null) return;
+
+    // Optimistic UI update
     state = state.copyWith(
       followedAuthors: {...state.followedAuthors, normalized},
     );
-    _saveFollows();
     AppLogger.d('AUTHOR_FOLLOW: Now following "$authorName"');
+
+    try {
+      await _supabase.from('author_follows').insert({
+        'user_id': user.id,
+        'author_name': normalized,
+        'followed_at': DateTime.now().toIso8601String(),
+      });
+    } catch (e) {
+      AppLogger.e('Failed to follow author', error: e);
+      // Rollback optimistic update on failure
+      final rollback = Set<String>.from(state.followedAuthors)..remove(normalized);
+      state = state.copyWith(followedAuthors: rollback);
+    }
   }
 
-  /// Unfollow an author
-  void unfollow(String authorName) {
+  /// Unfollow an author — optimistic UI update + Supabase delete
+  Future<void> unfollow(String authorName) async {
     if (authorName.isEmpty) return;
     final normalized = authorName.toLowerCase().trim();
     if (!state.followedAuthors.contains(normalized)) return;
 
+    final user = _supabase.auth.currentUser;
+    if (user == null) return;
+
+    // Optimistic UI update
     final newSet = Set<String>.from(state.followedAuthors)..remove(normalized);
     state = state.copyWith(followedAuthors: newSet);
-    _saveFollows();
     AppLogger.d('AUTHOR_FOLLOW: Unfollowed "$authorName"');
+
+    try {
+      await _supabase
+          .from('author_follows')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('author_name', normalized);
+    } catch (e) {
+      AppLogger.e('Failed to unfollow author', error: e);
+      // Rollback optimistic update on failure
+      state = state.copyWith(
+        followedAuthors: {...state.followedAuthors, normalized},
+      );
+    }
   }
 
   /// Toggle follow status
@@ -136,7 +134,7 @@ class AuthorFollowNotifier extends StateNotifier<AuthorFollowState> {
 /// Provider for author follow state
 final authorFollowProvider =
     StateNotifierProvider<AuthorFollowNotifier, AuthorFollowState>((ref) {
-  return AuthorFollowNotifier();
+  return AuthorFollowNotifier(ref);
 });
 
 /// Provider for "New from Authors You Follow" section

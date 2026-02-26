@@ -360,13 +360,16 @@ class AudioNotifier extends StateNotifier<AudioState> with WidgetsBindingObserve
     AppLogger.audio('OWNERSHIP: Updated - state.isOwned=true, handler synced');
   }
 
-  /// Listen for auth state changes and stop audio on logout
+  /// Listen for auth state changes: stop audio on logout, restore session on login
   void _initAuthListener() {
     _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen((data) {
       final event = data.event;
       if (event == AuthChangeEvent.signedOut) {
         AppLogger.audio('User signed out - stopping audio');
         _stopAndClear();
+      } else if (event == AuthChangeEvent.signedIn) {
+        AppLogger.audio('User signed in - restoring last session');
+        restoreLastSession();
       }
     });
   }
@@ -391,6 +394,94 @@ class AudioNotifier extends StateNotifier<AudioState> with WidgetsBindingObserve
 
     if (mounted) {
       state = const AudioState();
+    }
+  }
+
+  /// Restore the last played session after login.
+  ///
+  /// Queries Supabase for the most recent non-music listening progress and
+  /// pre-loads that audiobook's metadata into state — without starting audio
+  /// playback. The mini-player appears immediately; tapping play triggers a
+  /// full play() from the saved position (handled in togglePlayPause).
+  Future<void> restoreLastSession() async {
+    if (_isDisposed) return;
+
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
+
+    // Don't overwrite an active session
+    if (state.isPlaying || state.hasAudio) return;
+
+    try {
+      // Fetch last 5 progress entries with content_type to skip music
+      final progressRows = await Supabase.instance.client
+          .from('listening_progress')
+          .select('audiobook_id, current_chapter_index, position_seconds, audiobooks(content_type, status)')
+          .eq('user_id', user.id)
+          .order('last_played_at', ascending: false)
+          .limit(5);
+
+      if (_isDisposed) return;
+      if (progressRows.isEmpty) return;
+
+      // Find first non-music, approved audiobook
+      Map<String, dynamic>? progressRow;
+      int? audiobookId;
+      for (final row in progressRows) {
+        final bookRef = row['audiobooks'] as Map<String, dynamic>?;
+        final contentType = (bookRef?['content_type'] as String?) ?? 'audiobook';
+        final status = (bookRef?['status'] as String?) ?? '';
+        if (contentType == 'music') continue;
+        if (status != 'approved') continue;
+        progressRow = Map<String, dynamic>.from(row as Map);
+        audiobookId = row['audiobook_id'] as int?;
+        break;
+      }
+
+      if (progressRow == null || audiobookId == null) return;
+
+      // Fetch full audiobook data
+      final audiobookRaw = await Supabase.instance.client
+          .from('audiobooks')
+          .select('*, book_metadata(*), music_metadata(*)')
+          .eq('id', audiobookId)
+          .maybeSingle();
+
+      if (_isDisposed || audiobookRaw == null) return;
+
+      // Fetch chapters
+      final chaptersRaw = await Supabase.instance.client
+          .from('chapters')
+          .select()
+          .eq('audiobook_id', audiobookId)
+          .order('chapter_index', ascending: true);
+
+      if (_isDisposed) return;
+
+      final chapterList = (chaptersRaw as List)
+          .map((c) => Map<String, dynamic>.from(c as Map))
+          .toList();
+
+      final chapterIndex = (progressRow['current_chapter_index'] as int?) ?? 0;
+      final positionSeconds = (progressRow['position_seconds'] as num?)?.toInt() ?? 0;
+      final safeIndex = chapterList.isEmpty
+          ? 0
+          : chapterIndex.clamp(0, chapterList.length - 1);
+
+      if (mounted) {
+        state = state.copyWith(
+          audiobook: Map<String, dynamic>.from(audiobookRaw as Map),
+          chapters: chapterList,
+          currentChapterIndex: safeIndex,
+          position: Duration(seconds: positionSeconds),
+        );
+        AppLogger.audio(
+          'RESTORE: Loaded session — audiobookId=$audiobookId, '
+          'chapter=$safeIndex, pos=${positionSeconds}s',
+        );
+      }
+    } catch (e) {
+      AppLogger.e('Failed to restore last session', error: e);
     }
   }
 
@@ -1244,8 +1335,18 @@ class AudioNotifier extends StateNotifier<AudioState> with WidgetsBindingObserve
           await _player.pause();
         }
         _saveProgress();
+      } else if (_player.processingState == ProcessingState.idle && state.hasAudio) {
+        // Player has no audio loaded but we have restored session metadata —
+        // trigger a full play() from the saved position.
+        AppLogger.audio('[PP20][PROVIDER] Restored session: starting full play from saved position');
+        await play(
+          audiobook: state.audiobook!,
+          chapters: state.chapters,
+          chapterIndex: state.currentChapterIndex,
+          seekTo: state.position.inSeconds,
+        );
       } else {
-        // Currently paused -> play
+        // Currently paused -> resume
         if (_globalAudioHandler != null) {
           await _globalAudioHandler!.play();
         } else {

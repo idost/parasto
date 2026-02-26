@@ -3,6 +3,7 @@ import 'package:myna/providers/home_providers.dart';
 import 'package:myna/providers/support_providers.dart';
 import 'package:myna/providers/feedback_providers.dart';
 import 'package:myna/providers/bookmark_provider.dart';
+import 'package:myna/providers/author_follow_provider.dart';
 import 'package:myna/services/wishlist_service.dart';
 import 'package:myna/services/auth_service.dart';
 import 'package:myna/screens/listener/profile_screen.dart';
@@ -50,6 +51,9 @@ void invalidateUserProviders(WidgetRef ref) {
   // Bookmark provider - reset state
   ref.invalidate(bookmarkProvider);
 
+  // Author follow provider - reload from Supabase for new user
+  ref.invalidate(authorFollowProvider);
+
   AppLogger.i('User providers invalidated');
 }
 
@@ -91,6 +95,9 @@ void invalidateUserProvidersWithContainer(ProviderContainer container) {
 
   // Bookmark provider - reset state
   container.invalidate(bookmarkProvider);
+
+  // Author follow provider - reload from Supabase for new user
+  container.invalidate(authorFollowProvider);
 
   AppLogger.i('User providers invalidated (container)');
 }
