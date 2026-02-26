@@ -6,6 +6,7 @@ import 'package:myna/providers/audio_provider.dart';
 import 'package:myna/widgets/mini_player.dart';
 import 'package:myna/screens/listener/home_screen.dart';
 import 'package:myna/screens/listener/library_screen.dart';
+import 'package:myna/screens/listener/music_screen.dart';
 import 'package:myna/screens/listener/search_screen.dart';
 import 'package:myna/screens/listener/profile_screen.dart';
 
@@ -33,7 +34,7 @@ class _MainShellState extends ConsumerState<MainShell> {
   // Track which screens have been visited (for lazy building)
   final Set<int> _visitedScreens = {0}; // Home is always visited first
 
-  static const int _tabCount = 4;
+  static const int _tabCount = 5;
   static const int _homeIndex = 0;
 
   Widget _buildScreen(int index) {
@@ -43,8 +44,10 @@ class _MainShellState extends ConsumerState<MainShell> {
       case 1:
         return const LibraryScreen();
       case 2:
-        return const SearchScreen();
+        return const MusicScreen();
       case 3:
+        return const SearchScreen();
+      case 4:
         return const ProfileScreen();
       default:
         return const HomeScreen();
@@ -131,8 +134,9 @@ class _MainShellState extends ConsumerState<MainShell> {
                   children: [
                     _buildNavItem(0, Icons.home_outlined, Icons.home_rounded, 'خانه'),
                     _buildNavItem(1, Icons.library_books_outlined, Icons.library_books_rounded, 'کتابخانه'),
-                    _buildNavItem(2, Icons.search_outlined, Icons.search_rounded, 'کاوش'),
-                    _buildNavItem(3, Icons.person_outline_rounded, Icons.person_rounded, 'پروفایل'),
+                    _buildNavItem(2, Icons.music_note_outlined, Icons.music_note_rounded, 'موسیقی'),
+                    _buildNavItem(3, Icons.search_outlined, Icons.search_rounded, 'کاوش'),
+                    _buildNavItem(4, Icons.person_outline_rounded, Icons.person_rounded, 'پروفایل'),
                   ],
                 ),
               ),
