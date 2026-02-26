@@ -13,3 +13,7 @@
 
 # React Native Stripe SDK (referenced by flutter_stripe)
 -dontwarn com.reactnativestripesdk.**
+
+# ucrop optional okhttp3 dependency (not bundled)
+-dontwarn okhttp3.**
+-dontwarn okio.**
