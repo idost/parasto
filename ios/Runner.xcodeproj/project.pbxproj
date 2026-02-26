@@ -192,6 +192,7 @@
 			buildPhases = (
 				2ECA20BB0B9377A9BE634124 /* [CP] Check Pods Manifest.lock */,
 				9740EEB61CF901F6004384FC /* Run Script */,
+				FA7C5B3D1A9E82F4C6D05AB8 /* Fix App.framework Info.plist */,
 				97C146EA1CF9000F007C117D /* Sources */,
 				97C146EB1CF9000F007C117D /* Frameworks */,
 				97C146EC1CF9000F007C117D /* Resources */,
@@ -356,6 +357,22 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "/bin/sh \"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\" build\n# macOS Sequoia fix: strip com.apple.provenance xattrs that break codesigning\nxattr -cr \"${BUILT_PRODUCTS_DIR}\" 2>/dev/null || true";
+		};
+		FA7C5B3D1A9E82F4C6D05AB8 /* Fix App.framework Info.plist */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"${SRCROOT}/Flutter/AppFrameworkInfo.plist",
+			);
+			name = "Fix App.framework Info.plist";
+			outputPaths = (
+				"${BUILT_PRODUCTS_DIR}/App.framework/Info.plist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "cp \"${SRCROOT}/Flutter/AppFrameworkInfo.plist\" \"${BUILT_PRODUCTS_DIR}/App.framework/Info.plist\" 2>/dev/null || true\n";
 		};
 		C857DA6F16EDDC73DB9A6A7E /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
